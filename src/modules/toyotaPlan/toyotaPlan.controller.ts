@@ -8,7 +8,10 @@ export class ToyotaPlanController {
   generateLink = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const body = generateLinkBodySchema.parse(req.body);
-      const result = await this.service.generateSubscriptionLink(body.slug);
+      const result = await this.service.generateSubscriptionLink(body.slug, {
+        ip: req.ip,
+        userAgent: req.get("user-agent") ?? "unknown"
+      });
       res.json(result);
     } catch (error) {
       next(error);

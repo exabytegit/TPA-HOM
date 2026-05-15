@@ -12,7 +12,8 @@ const config: ToyotaPlanRuntimeConfig = {
   clientId: "client-id",
   clientSecret: "client-secret",
   tokenUrl: "https://auth.example.com/oauth2/token",
-  generateLinkUrl: "https://api.example.com/generatelink"
+  generateLinkUrl: "https://api.example.com/generatelink",
+  expectedLinkHost: "sdx.suscripcion.toyotaplan.com.ar"
 };
 
 const catalogItem: ToyotaPlanCatalogItem = {
@@ -57,7 +58,7 @@ describe("ToyotaPlanService", () => {
     });
     const generateHttpClient = createMockHttpClient({
       success: true,
-      link: "https://suscripcion.toyotaplan.com.ar/?external=abc"
+      link: "https://sdx.suscripcion.toyotaplan.com.ar/?external=abc"
     });
 
     const service = new ToyotaPlanService(
@@ -69,7 +70,7 @@ describe("ToyotaPlanService", () => {
 
     await expect(service.generateSubscriptionLink(catalogItem.slug)).resolves.toEqual({
       success: true,
-      link: "https://suscripcion.toyotaplan.com.ar/?external=abc",
+      link: "https://sdx.suscripcion.toyotaplan.com.ar/?external=abc",
       model: catalogItem.modelDescription,
       plan: catalogItem.planDescription,
       amount: 558824.14
@@ -107,7 +108,7 @@ describe("ToyotaPlanService", () => {
     );
     const generateHttpClient = createMockHttpClient(tokenExpiredError, {
       success: true,
-      link: "https://suscripcion.toyotaplan.com.ar/?external=fresh"
+      link: "https://sdx.suscripcion.toyotaplan.com.ar/?external=fresh"
     });
 
     const service = new ToyotaPlanService(
@@ -119,7 +120,7 @@ describe("ToyotaPlanService", () => {
 
     await expect(service.generateSubscriptionLink(catalogItem.slug)).resolves.toMatchObject({
       success: true,
-      link: "https://suscripcion.toyotaplan.com.ar/?external=fresh"
+      link: "https://sdx.suscripcion.toyotaplan.com.ar/?external=fresh"
     });
 
     expect(authHttpClient.post).toHaveBeenCalledTimes(2);
@@ -132,6 +133,29 @@ describe("ToyotaPlanService", () => {
           Authorization: "Bearer fresh-token"
         })
       })
+    );
+  });
+
+  it("rejects an unexpected Toyota Plan link host", async () => {
+    const authHttpClient = createMockHttpClient({
+      access_token: "token-1",
+      expires_in: 3600,
+      token_type: "Bearer"
+    });
+    const generateHttpClient = createMockHttpClient({
+      success: true,
+      link: "https://unexpected.example.com/?external=abc"
+    });
+
+    const service = new ToyotaPlanService(
+      new ToyotaPlanCatalogService([catalogItem]),
+      new ToyotaPlanAuthService(config, authHttpClient),
+      generateHttpClient,
+      config
+    );
+
+    await expect(service.generateSubscriptionLink(catalogItem.slug)).rejects.toThrow(
+      "Toyota Plan integration error"
     );
   });
 });

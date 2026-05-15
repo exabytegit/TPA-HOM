@@ -6,6 +6,7 @@ import { generateLinkResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanAuthService, toyotaPlanAuthService } from "./toyotaPlanAuth.service";
 import {
   GenerateSubscriptionLinkResult,
+  RequestMetadata,
   ToyotaPlanCatalogItem,
   ToyotaPlanGenerateLinkRequest,
   ToyotaPlanGenerateLinkResponse,
@@ -26,8 +27,15 @@ export class ToyotaPlanService {
     private readonly config: ToyotaPlanRuntimeConfig = toyotaPlanConfig
   ) {}
 
-  async generateSubscriptionLink(slug: string): Promise<GenerateSubscriptionLinkResult> {
-    logger.info("Toyota Plan generate link requested", { slug });
+  async generateSubscriptionLink(
+    slug: string,
+    metadata: RequestMetadata = {}
+  ): Promise<GenerateSubscriptionLinkResult> {
+    logger.info("Toyota Plan link generation requested", {
+      slug,
+      ip: metadata.ip,
+      userAgent: metadata.userAgent
+    });
 
     const catalogItem = this.catalogService.getEnabledCatalogItemBySlug(slug);
     const payload = this.toToyotaPlanPayload(catalogItem);
@@ -37,33 +45,54 @@ export class ToyotaPlanService {
       modelId: payload.modelId,
       planId: payload.planId,
       amount: payload.amount,
-      seller: payload.seller
+      seller: payload.seller,
+      ip: metadata.ip,
+      userAgent: metadata.userAgent
     });
 
-    const token = await this.authService.getAccessToken();
-    const toyotaResponse = await this.callGenerateLink(payload, token, false);
+    try {
+      const token = await this.authService.getAccessToken();
+      const toyotaResponse = await this.callGenerateLink(payload, token, false);
 
-    if (!toyotaResponse.success || !toyotaResponse.link) {
-      logger.error("Toyota Plan returned unsuccessful response", {
+      if (!toyotaResponse.success || !toyotaResponse.link) {
+        logger.error("Toyota Plan returned unsuccessful response", {
+          slug,
+          response: toyotaResponse,
+          ip: metadata.ip,
+          userAgent: metadata.userAgent
+        });
+        throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_FAILED");
+      }
+
+      this.validateReturnedLinkHost(toyotaResponse.link);
+
+      logger.info("Toyota Plan link generated successfully", {
         slug,
-        response: toyotaResponse
+        modelId: payload.modelId,
+        planId: payload.planId,
+        amount: payload.amount,
+        seller: payload.seller,
+        ip: metadata.ip,
+        userAgent: metadata.userAgent
       });
-      throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_FAILED");
+
+      return {
+        success: true,
+        link: toyotaResponse.link,
+        model: catalogItem.modelDescription,
+        plan: catalogItem.planDescription,
+        amount: catalogItem.amount
+      };
+    } catch (error) {
+      logger.error("Toyota Plan link generation failed", {
+        slug,
+        error: error instanceof Error ? error.message : "Unknown error",
+        ip: metadata.ip,
+        userAgent: metadata.userAgent
+      });
+
+      throw error;
     }
-
-    logger.info("Toyota Plan link generated", {
-      slug,
-      modelId: payload.modelId,
-      planId: payload.planId
-    });
-
-    return {
-      success: true,
-      link: toyotaResponse.link,
-      model: catalogItem.modelDescription,
-      plan: catalogItem.planDescription,
-      amount: catalogItem.amount
-    };
   }
 
   private toToyotaPlanPayload(item: ToyotaPlanCatalogItem): ToyotaPlanGenerateLinkRequest {
@@ -121,6 +150,30 @@ export class ToyotaPlanService {
 
     const message = String(responseData.message).toLowerCase();
     return message.includes("token") && message.includes("expired");
+  }
+
+  private validateReturnedLinkHost(link: string): void {
+    try {
+      const parsedUrl = new URL(link);
+
+      if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== this.config.expectedLinkHost) {
+        logger.error("Unexpected Toyota Plan link host", {
+          expectedHost: this.config.expectedLinkHost,
+          receivedHost: parsedUrl.hostname,
+          protocol: parsedUrl.protocol
+        });
+        throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_HOST_INVALID");
+      }
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      logger.error("Invalid Toyota Plan link URL", {
+        expectedHost: this.config.expectedLinkHost
+      });
+      throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_URL_INVALID");
+    }
   }
 }
 

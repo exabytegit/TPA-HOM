@@ -1,6 +1,6 @@
 # Proyecto: Integración API Suscripción Digital Toyota Plan — HOMU S.A.
 
-**Versión:** 0.2 consolidada  
+**Versión:** 0.3 seguridad y preparación productiva  
 **Concesionario:** HOMU S.A.  
 **Seller productivo:** `HOM`  
 **Objetivo:** integrar el sitio web del concesionario con la API pública de Suscripción Digital Toyota Plan para generar links de suscripción online por modelo y plan.
@@ -371,6 +371,14 @@ POST /api/toyota-plan/generate-link
 ## 11. Variables de entorno sugeridas
 
 ```env
+NODE_ENV=development
+PORT=3000
+
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=10
+
 TOYOTA_PLAN_ENV=sandbox
 TOYOTA_PLAN_CLIENT_ID=colocar_client_id
 TOYOTA_PLAN_CLIENT_SECRET=colocar_client_secret
@@ -378,8 +386,10 @@ TOYOTA_PLAN_SCOPE=ext-link/write
 TOYOTA_PLAN_SELLER=HOM
 TOYOTA_PLAN_TOKEN_URL_SANDBOX=https://auth.sdx.suscripcion.toyotaplan.com.ar/oauth2/token
 TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX=https://sdx.suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink
+TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX=sdx.suscripcion.toyotaplan.com.ar
 TOYOTA_PLAN_TOKEN_URL_PRODUCTION=https://auth.suscripcion.toyotaplan.com.ar/oauth2/token
 TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION=https://suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink
+TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION=suscripcion.toyotaplan.com.ar
 ```
 
 ---
@@ -654,3 +664,193 @@ El proyecto ya cuenta con información suficiente para iniciar el desarrollo de 
 
 La primera versión debe enfocarse en estabilidad, seguridad y trazabilidad. El catálogo puede comenzar en JSON para acelerar la prueba, pero en producción conviene migrarlo a base de datos o a una fuente administrable con control de vigencia, especialmente por el campo `amount`.
 
+---
+
+## 22. Mejoras v0.3 — Seguridad, trazabilidad y preparación productiva
+
+Esta mejora mantiene la arquitectura central del backend adapter y agrega controles necesarios para una primera operación más segura.
+
+### 22.1 CORS restringido por ambiente
+
+Se agrega configuración CORS mediante la variable:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+```
+
+En producción debe configurarse con dominios reales del sitio HOMU, por ejemplo:
+
+```env
+CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
+```
+
+En desarrollo se permiten requests sin `Origin` para herramientas como curl o Postman. En producción solo deben permitirse origins autorizados.
+
+### 22.2 Rate limiting
+
+El endpoint:
+
+```txt
+POST /api/toyota-plan/generate-link
+```
+
+queda protegido por rate limiting configurable:
+
+```env
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=10
+```
+
+Si se supera el límite, el backend responde:
+
+```json
+{
+  "success": false,
+  "message": "Too many requests. Please try again later."
+}
+```
+
+### 22.3 Captura de metadata de auditoría
+
+El controller captura:
+
+- IP del request.
+- User-Agent.
+
+Esta metadata se propaga al service y queda disponible en logs técnicos de solicitud, éxito y error. No se guardan todavía en base de datos, pero el diseño queda preparado para una futura tabla de auditoría.
+
+### 22.4 Helmet
+
+El backend aplica `helmet()` antes de las rutas para agregar headers básicos de seguridad HTTP.
+
+### 22.5 Healthcheck
+
+Se agrega endpoint liviano:
+
+```txt
+GET /health
+```
+
+Ejemplo de prueba:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "ok",
+  "service": "toyota-plan-adapter",
+  "environment": "sandbox",
+  "timestamp": "2026-05-15T00:00:00.000Z",
+  "uptime": 12.34,
+  "nodeEnv": "development"
+}
+```
+
+Este endpoint no llama a Toyota Plan y no expone credenciales.
+
+### 22.6 Graceful shutdown
+
+`server.ts` maneja `SIGINT` y `SIGTERM` para cerrar el servidor HTTP de forma ordenada. Si el cierre no finaliza, existe un timeout de seguridad para forzar salida.
+
+### 22.7 Validación del dominio del link devuelto
+
+El backend valida el host del link devuelto por Toyota Plan antes de responder al frontend.
+
+Hosts esperados:
+
+```env
+TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX=sdx.suscripcion.toyotaplan.com.ar
+TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION=suscripcion.toyotaplan.com.ar
+```
+
+Si Toyota Plan devuelve un link con host inesperado, el backend responde error de integración:
+
+```json
+{
+  "success": false,
+  "message": "Toyota Plan integration error"
+}
+```
+
+### 22.8 Buenas prácticas de frontend
+
+El frontend debe llamar a:
+
+```txt
+POST /api/toyota-plan/generate-link
+```
+
+solamente cuando el usuario haga clic en "Suscribite" o acción equivalente.
+
+No se deben generar links automáticamente ni masivamente al cargar la página, porque eso produce llamadas innecesarias a la API externa y puede consumir rate limit.
+
+Ejemplo:
+
+```bash
+curl -X POST "http://localhost:3000/api/toyota-plan/generate-link" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "hilux-4x4-dc-dx-24-tdi-at-plan-100"
+  }'
+```
+
+### 22.9 Roadmap futuro: catálogo en base de datos
+
+No se implementa base de datos en esta etapa.
+
+El catálogo actual vive en:
+
+```txt
+src/config/toyota-plan.catalog.json
+```
+
+En producción futura conviene migrarlo a una tabla:
+
+```txt
+toyota_plan_catalog
+```
+
+Motivo principal: los valores de `amount` pueden cambiar frecuentemente y requieren vigencia, fuente e historial.
+
+Campos sugeridos:
+
+- `id`
+- `slug`
+- `model_id`
+- `model_description`
+- `plan_id`
+- `plan_description`
+- `amount`
+- `seller`
+- `enabled`
+- `source`
+- `valid_from`
+- `valid_to`
+- `created_at`
+- `updated_at`
+
+También se recomienda una futura tabla de auditoría:
+
+```txt
+toyota_plan_link_log
+```
+
+Campos sugeridos:
+
+- `id`
+- `catalog_slug`
+- `model_id`
+- `plan_id`
+- `amount`
+- `seller`
+- `success`
+- `generated_link`
+- `error_code`
+- `error_message`
+- `request_ip`
+- `user_agent`
+- `created_at`

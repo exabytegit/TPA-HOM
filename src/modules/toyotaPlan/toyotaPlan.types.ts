@@ -36,6 +36,11 @@ export interface GenerateSubscriptionLinkResult {
   amount: number;
 }
 
+export interface RequestMetadata {
+  ip?: string;
+  userAgent?: string;
+}
+
 export interface ToyotaPlanRuntimeConfig {
   environment: "sandbox" | "production";
   seller: "HOM";
@@ -44,4 +49,5 @@ export interface ToyotaPlanRuntimeConfig {
   clientSecret: string;
   tokenUrl: string;
   generateLinkUrl: string;
+  expectedLinkHost: string;
 }

@@ -28,6 +28,8 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 - axios
 - zod
 - helmet
+- cors
+- express-rate-limit
 - Vitest
 - ESLint / Prettier
 
@@ -53,6 +55,11 @@ No hay credenciales reales en el repositorio.
 NODE_ENV=development
 PORT=3000
 
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=10
+
 TOYOTA_PLAN_ENV=sandbox
 
 TOYOTA_PLAN_CLIENT_ID=
@@ -62,12 +69,16 @@ TOYOTA_PLAN_SELLER=HOM
 
 TOYOTA_PLAN_TOKEN_URL_SANDBOX=https://auth.sdx.suscripcion.toyotaplan.com.ar/oauth2/token
 TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX=https://sdx.suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink
+TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX=sdx.suscripcion.toyotaplan.com.ar
 
 TOYOTA_PLAN_TOKEN_URL_PRODUCTION=https://auth.suscripcion.toyotaplan.com.ar/oauth2/token
 TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION=https://suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink
+TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION=suscripcion.toyotaplan.com.ar
 ```
 
 `TOYOTA_PLAN_ENV` acepta solo `sandbox` o `production`. El default del proyecto es `sandbox`.
+`CORS_ALLOWED_ORIGINS` es una lista separada por coma. En desarrollo se permiten requests sin
+`Origin` para curl/Postman; en produccion solo deben pasar dominios autorizados.
 
 ## Comandos
 
@@ -92,6 +103,19 @@ Health check:
 
 ```bash
 curl http://localhost:3000/health
+```
+
+Respuesta:
+
+```json
+{
+  "status": "ok",
+  "service": "toyota-plan-adapter",
+  "environment": "sandbox",
+  "timestamp": "2026-05-15T00:00:00.000Z",
+  "uptime": 12.34,
+  "nodeEnv": "development"
+}
 ```
 
 Generar link:
@@ -125,6 +149,22 @@ Body:
 ```json
 {
   "slug": "hilux-4x4-dc-dx-24-tdi-at-plan-100"
+}
+```
+
+El endpoint tiene rate limiting especifico. Por default permite 10 requests por minuto por IP:
+
+```env
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=10
+```
+
+Si se excede el limite:
+
+```json
+{
+  "success": false,
+  "message": "Too many requests. Please try again later."
 }
 ```
 
@@ -174,6 +214,19 @@ No debe enviarse como string visual argentino, por ejemplo `"$ 558.824,14"`.
 - Usar `slug` como unico dato confiable recibido desde frontend.
 - Mantener sandbox por defecto hasta tener validacion operativa.
 - Usar HTTPS obligatorio en produccion.
+- CORS esta restringido por `CORS_ALLOWED_ORIGINS`.
+- Helmet aplica headers basicos de seguridad HTTP.
+- El endpoint de generacion tiene rate limiting.
+- El link devuelto por Toyota Plan se valida contra el host esperado por ambiente.
+- El controller captura `ip` y `user-agent` para trazabilidad tecnica en logs.
+
+## Buenas practicas de frontend
+
+El frontend debe llamar a `POST /api/toyota-plan/generate-link` solamente cuando el usuario haga
+clic en "Suscribite" o una accion equivalente.
+
+No generar links masivamente al cargar la pagina. Eso produciria llamadas innecesarias a Toyota Plan
+y podria consumir rate limit o generar trazabilidad confusa.
 
 ## Token OAuth2
 
@@ -230,14 +283,21 @@ Credenciales no configuradas:
 
 1. Configurar credenciales productivas.
 2. Confirmar con Toyota Plan que `HOM` esta habilitado en produccion.
-3. Cambiar:
+3. Configurar dominios reales:
+
+```env
+CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
+```
+
+4. Cambiar:
 
 ```env
 TOYOTA_PLAN_ENV=production
 ```
 
-4. Probar primero con un modelo controlado.
-5. Revisar logs y monitoreo antes de publicar el flujo al sitio.
+5. Confirmar `TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION=suscripcion.toyotaplan.com.ar`.
+6. Probar primero con un modelo controlado.
+7. Revisar logs y monitoreo antes de publicar el flujo al sitio.
 
 ## Estructura principal
 
@@ -246,11 +306,13 @@ src/
   app.ts
   server.ts
   config/
+    corsConfig.ts
     env.ts
     toyota-plan.catalog.json
     toyotaPlanConfig.ts
   middlewares/
     errorHandler.ts
+    rateLimit.ts
     requestLogger.ts
   modules/
     toyotaPlan/
@@ -268,11 +330,67 @@ src/
 tests/
 ```
 
+## Mejoras v0.3 - Seguridad, trazabilidad y preparacion productiva
+
+- CORS restringido por ambiente usando `CORS_ALLOWED_ORIGINS`.
+- Rate limiting especifico en `POST /api/toyota-plan/generate-link`.
+- Captura de IP y User-Agent desde el controller.
+- Propagacion de metadata al service y logs.
+- Helmet aplicado antes de las rutas.
+- Healthcheck liviano en `GET /health`, sin llamadas externas.
+- Graceful shutdown ante `SIGINT` y `SIGTERM`.
+- Validacion del dominio del link devuelto por Toyota Plan.
+- Documentacion de la regla frontend: generar link solo por accion del usuario.
+- Roadmap documentado para migrar catalogo JSON a base de datos.
+
+## Roadmap base de datos
+
+No hay base de datos implementada todavia. El catalogo actual vive en:
+
+```txt
+src/config/toyota-plan.catalog.json
+```
+
+En una etapa productiva futura conviene migrarlo a una tabla `toyota_plan_catalog`, porque los
+valores de `amount` pueden cambiar con frecuencia.
+
+Campos sugeridos:
+
+- `id`
+- `slug`
+- `model_id`
+- `model_description`
+- `plan_id`
+- `plan_description`
+- `amount`
+- `seller`
+- `enabled`
+- `source`
+- `valid_from`
+- `valid_to`
+- `created_at`
+- `updated_at`
+
+Tambien queda prevista una tabla de auditoria `toyota_plan_link_log`:
+
+- `id`
+- `catalog_slug`
+- `model_id`
+- `plan_id`
+- `amount`
+- `seller`
+- `success`
+- `generated_link`
+- `error_code`
+- `error_message`
+- `request_ip`
+- `user_agent`
+- `created_at`
+
 ## Proximos pasos recomendados
 
 - Obtener credenciales sandbox reales.
 - Probar token y `generatelink` con uno o dos modelos.
 - Definir persistencia de logs para produccion.
 - Definir alojamiento del backend.
-- Agregar CORS restringido al dominio real del sitio HOMU cuando se integre frontend.
 - Migrar catalogo a base de datos o panel administrable cuando los amounts requieran vigencia.
