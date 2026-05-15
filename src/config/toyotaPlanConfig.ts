@@ -1,5 +1,11 @@
 import { env } from "./env";
 
+export const resolveExpectedLinkHost = (
+  environment: "sandbox" | "production",
+  sandboxHost: string,
+  productionHost: string
+): string => (environment === "production" ? productionHost : sandboxHost);
+
 export const toyotaPlanConfig = {
   environment: env.TOYOTA_PLAN_ENV,
   seller: env.TOYOTA_PLAN_SELLER,
@@ -14,8 +20,9 @@ export const toyotaPlanConfig = {
     env.TOYOTA_PLAN_ENV === "production"
       ? env.TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION
       : env.TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX,
-  expectedLinkHost:
-    env.TOYOTA_PLAN_ENV === "production"
-      ? env.TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION
-      : env.TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX
+  expectedLinkHost: resolveExpectedLinkHost(
+    env.TOYOTA_PLAN_ENV,
+    env.TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX,
+    env.TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION
+  )
 } as const;

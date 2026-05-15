@@ -1,6 +1,6 @@
 # Proyecto: Integración API Suscripción Digital Toyota Plan — HOMU S.A.
 
-**Versión:** 0.3 seguridad y preparación productiva  
+**Versión:** 0.3.1 hardening previo a credenciales sandbox
 **Concesionario:** HOMU S.A.  
 **Seller productivo:** `HOM`  
 **Objetivo:** integrar el sitio web del concesionario con la API pública de Suscripción Digital Toyota Plan para generar links de suscripción online por modelo y plan.
@@ -373,6 +373,7 @@ POST /api/toyota-plan/generate-link
 ```env
 NODE_ENV=development
 PORT=3000
+TRUST_PROXY=false
 
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
@@ -854,3 +855,126 @@ Campos sugeridos:
 - `request_ip`
 - `user_agent`
 - `created_at`
+
+---
+
+## 23. Mejoras v0.3.1 — Hardening previo a credenciales sandbox
+
+Esta mejora se aplica antes de cargar credenciales sandbox reales y mantiene sin cambios el flujo principal: el frontend sigue enviando solo `slug`, el backend resuelve internamente `modelId`, `planId`, `amount` y `seller`, y el seller sigue siendo `HOM`.
+
+### 23.1 TRUST_PROXY configurable
+
+`trust proxy` ya no queda activo por defecto. Se controla con:
+
+```env
+TRUST_PROXY=false
+```
+
+Valores aceptados:
+
+- `false`
+- `0`
+- `true`
+- número positivo como string, por ejemplo `1`
+
+Uso recomendado:
+
+```env
+TRUST_PROXY=false
+```
+
+para desarrollo local o despliegue directo.
+
+```env
+TRUST_PROXY=1
+```
+
+solo cuando el backend esté detrás de un único proxy reverso confiable que limpie o sobrescriba `X-Forwarded-For`.
+
+Una configuración incorrecta puede afectar:
+
+- `req.ip`
+- auditoría
+- rate limiting
+
+### 23.2 Validación estricta de CORS_ALLOWED_ORIGINS
+
+`CORS_ALLOWED_ORIGINS` se parsea como lista separada por coma, se limpian espacios y se valida cada origin con `URL` nativo.
+
+Reglas:
+
+- Solo `http` o `https`.
+- No se permite wildcard `*`.
+- En producción debe existir al menos un origin válido.
+- En desarrollo puede quedar vacío para facilitar pruebas sin `Origin` con curl/Postman.
+
+Ejemplos válidos:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
+```
+
+Ejemplos inválidos en producción:
+
+```env
+CORS_ALLOWED_ORIGINS=
+CORS_ALLOWED_ORIGINS=*
+CORS_ALLOWED_ORIGINS=homu.com.ar
+CORS_ALLOWED_ORIGINS=ftp://homu.com.ar
+```
+
+### 23.3 Redacción recursiva de logs
+
+El logger sanitiza metadata de forma recursiva:
+
+- objetos anidados
+- arrays
+- errores
+- strings con formato `Bearer ...`
+- ciclos de referencia
+
+Claves sensibles redactadas:
+
+- `access_token`
+- `accessToken`
+- `token`
+- `id_token`
+- `refresh_token`
+- `client_secret`
+- `clientSecret`
+- `secret`
+- `password`
+- `authorization`
+- `Authorization`
+- `api_key`
+- `apiKey`
+- `bearer`
+
+Valor usado:
+
+```txt
+[REDACTED]
+```
+
+Las respuestas externas de OAuth/API se registran sanitizadas. No se deben loguear objetos Axios completos ni headers sensibles sin pasar por el logger.
+
+### 23.4 Tests adicionales productivos
+
+Se agregan pruebas para:
+
+- producción sin `Origin` rechazada por CORS;
+- `/health` fuera del rate limit del endpoint principal;
+- host esperado según `sandbox` o `production`;
+- validación de `CORS_ALLOWED_ORIGINS`;
+- parsing seguro de `TRUST_PROXY`;
+- redacción recursiva de secrets y tokens.
+
+### 23.5 Recomendación para credenciales sandbox
+
+Las credenciales sandbox deben cargarse únicamente en:
+
+- `.env` local no versionado; o
+- secret manager del entorno de despliegue.
+
+Nunca commitear `.env`, `client_secret`, tokens OAuth ni headers `Authorization`.

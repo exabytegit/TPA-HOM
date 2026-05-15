@@ -1,7 +1,7 @@
 import { toyotaPlanConfig } from "../../config/toyotaPlanConfig";
 import { AppError } from "../../utils/appError";
 import { getErrorResponseData, HttpClient, axiosHttpClient } from "../../utils/httpClient";
-import { logger } from "../../utils/logger";
+import { logger, sanitizeForLog } from "../../utils/logger";
 import { tokenResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanRuntimeConfig, ToyotaPlanTokenResponse } from "./toyotaPlan.types";
 
@@ -70,7 +70,8 @@ export class ToyotaPlanAuthService {
     } catch (error) {
       const responseData = getErrorResponseData(error);
       logger.error("Toyota Plan OAuth error", {
-        response: responseData
+        response: sanitizeForLog(responseData),
+        message: error instanceof Error ? error.message : "Unknown error"
       });
 
       throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_AUTH_ERROR");

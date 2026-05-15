@@ -1,6 +1,10 @@
+import cors from "cors";
+import express from "express";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
+import { createCorsConfig } from "../src/config/corsConfig";
+import { errorHandler } from "../src/middlewares/errorHandler";
 
 describe("app security middleware", () => {
   it("returns healthcheck data without external calls", async () => {
@@ -40,6 +44,22 @@ describe("app security middleware", () => {
     });
   });
 
+  it("rejects requests without Origin in production CORS config", async () => {
+    const app = express();
+    app.use(
+      cors(
+        createCorsConfig({
+          nodeEnv: "production",
+          allowedOrigins: ["https://www.homu.com.ar"]
+        })
+      )
+    );
+    app.get("/health", (_req, res) => res.json({ status: "ok" }));
+    app.use(errorHandler);
+
+    await request(app).get("/health").expect(403);
+  });
+
   it("rate limits generate-link requests", async () => {
     const app = createApp();
 
@@ -61,5 +81,18 @@ describe("app security middleware", () => {
       success: false,
       message: "Too many requests. Please try again later."
     });
+  });
+
+  it("does not rate limit healthcheck after generate-link limit is exhausted", async () => {
+    const app = createApp();
+
+    for (let index = 0; index < 11; index += 1) {
+      await request(app)
+        .post("/api/toyota-plan/generate-link")
+        .set("Origin", "http://localhost:5173")
+        .send({});
+    }
+
+    await request(app).get("/health").set("Origin", "http://localhost:5173").expect(200);
   });
 });

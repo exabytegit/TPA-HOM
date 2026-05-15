@@ -54,6 +54,7 @@ No hay credenciales reales en el repositorio.
 ```env
 NODE_ENV=development
 PORT=3000
+TRUST_PROXY=false
 
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
@@ -79,6 +80,9 @@ TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION=suscripcion.toyotaplan.com.ar
 `TOYOTA_PLAN_ENV` acepta solo `sandbox` o `production`. El default del proyecto es `sandbox`.
 `CORS_ALLOWED_ORIGINS` es una lista separada por coma. En desarrollo se permiten requests sin
 `Origin` para curl/Postman; en produccion solo deben pasar dominios autorizados.
+`TRUST_PROXY=false` es el default seguro para desarrollo o despliegue directo. Usar `TRUST_PROXY=1`
+solo cuando el backend este detras de un unico proxy reverso confiable que limpie o sobrescriba
+`X-Forwarded-For`.
 
 ## Comandos
 
@@ -219,6 +223,48 @@ No debe enviarse como string visual argentino, por ejemplo `"$ 558.824,14"`.
 - El endpoint de generacion tiene rate limiting.
 - El link devuelto por Toyota Plan se valida contra el host esperado por ambiente.
 - El controller captura `ip` y `user-agent` para trazabilidad tecnica en logs.
+- Los logs sanitizan secrets y tokens de forma recursiva antes de escribir metadata.
+- `TRUST_PROXY` es configurable y no queda activo por defecto.
+
+## Trust Proxy
+
+Express usa `trust proxy` para decidir si debe confiar en headers como `X-Forwarded-For`.
+
+Configuracion local o despliegue directo:
+
+```env
+TRUST_PROXY=false
+```
+
+Configuracion detras de un unico proxy reverso confiable:
+
+```env
+TRUST_PROXY=1
+```
+
+No usar `TRUST_PROXY=1` si el backend queda expuesto directamente a internet o si el proxy no limpia
+headers entrantes. Una configuracion incorrecta puede afectar `req.ip`, auditoria y rate limiting.
+
+## Logging Seguro
+
+El logger sanitiza metadata de forma recursiva:
+
+- `access_token`
+- `accessToken`
+- `token`
+- `id_token`
+- `refresh_token`
+- `client_secret`
+- `clientSecret`
+- `secret`
+- `password`
+- `authorization`
+- `api_key`
+- `apiKey`
+- strings tipo `Bearer eyJ...`
+
+Las respuestas externas de OAuth/API se registran sanitizadas. No se deben loguear objetos Axios
+completos ni headers sensibles sin pasar por el logger.
 
 ## Buenas practicas de frontend
 
@@ -342,6 +388,18 @@ tests/
 - Validacion del dominio del link devuelto por Toyota Plan.
 - Documentacion de la regla frontend: generar link solo por accion del usuario.
 - Roadmap documentado para migrar catalogo JSON a base de datos.
+
+## Mejoras v0.3.1 - Hardening previo a credenciales sandbox
+
+- `TRUST_PROXY` configurable por variable de entorno.
+- Default seguro `TRUST_PROXY=false`.
+- Validacion estricta de `CORS_ALLOWED_ORIGINS` con origins `http`/`https`.
+- En produccion, `CORS_ALLOWED_ORIGINS` no puede quedar vacio ni usar wildcard.
+- Redaccion recursiva de logs para secretos, tokens, arrays y objetos anidados.
+- Sanitizacion de respuestas externas antes de loguearlas.
+- Tests adicionales para CORS productivo sin `Origin`, healthcheck fuera de rate limit, host esperado por ambiente y redaccion de logs.
+- Recomendacion reforzada: cargar credenciales solo en `.env` local o secret manager.
+- Recordatorio: `.env` no debe commitearse.
 
 ## Roadmap base de datos
 

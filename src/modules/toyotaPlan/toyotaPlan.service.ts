@@ -1,7 +1,7 @@
 import { toyotaPlanConfig } from "../../config/toyotaPlanConfig";
 import { AppError } from "../../utils/appError";
 import { axiosHttpClient, getErrorResponseData, HttpClient } from "../../utils/httpClient";
-import { logger } from "../../utils/logger";
+import { logger, sanitizeForLog } from "../../utils/logger";
 import { generateLinkResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanAuthService, toyotaPlanAuthService } from "./toyotaPlanAuth.service";
 import {
@@ -136,7 +136,8 @@ export class ToyotaPlanService {
       }
 
       logger.error("Toyota Plan generate link error", {
-        response: responseData
+        response: sanitizeForLog(responseData),
+        message: error instanceof Error ? error.message : "Unknown error"
       });
 
       throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_ERROR");

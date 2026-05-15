@@ -1,28 +1,32 @@
 import { CorsOptions } from "cors";
-import { env } from "./env";
+import { env, NodeEnv } from "./env";
 import { AppError } from "../utils/appError";
 
-const allowedOrigins = env.CORS_ALLOWED_ORIGINS.split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+interface CorsConfigInput {
+  nodeEnv: NodeEnv;
+  allowedOrigins: string[];
+}
 
-export const corsConfig: CorsOptions = {
+export const createCorsConfig = ({ nodeEnv, allowedOrigins }: CorsConfigInput): CorsOptions => ({
   origin: (origin, callback) => {
-    if (!origin && env.NODE_ENV !== "production") {
-      callback(null, true);
-      return;
+    if (!origin && nodeEnv !== "production") {
+      return callback(null, true);
     }
 
     if (origin && allowedOrigins.includes(origin)) {
-      callback(null, true);
-      return;
+      return callback(null, true);
     }
 
-    callback(new AppError(403, "Not allowed by CORS", "CORS_ORIGIN_NOT_ALLOWED"));
+    return callback(new AppError(403, "Not allowed by CORS", "CORS_ORIGIN_NOT_ALLOWED"));
   },
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"],
   credentials: false
-};
+});
 
-export const corsAllowedOrigins = allowedOrigins;
+export const corsConfig = createCorsConfig({
+  nodeEnv: env.NODE_ENV,
+  allowedOrigins: env.CORS_ALLOWED_ORIGINS
+});
+
+export const corsAllowedOrigins = env.CORS_ALLOWED_ORIGINS;
