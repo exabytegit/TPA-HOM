@@ -13,5 +13,9 @@ export const toyotaPlanConfig = {
   generateLinkUrl:
     env.TOYOTA_PLAN_ENV === "production"
       ? env.TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION
-      : env.TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX
+      : env.TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX,
+  expectedLinkHost:
+    env.TOYOTA_PLAN_ENV === "production"
+      ? env.TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION
+      : env.TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX
 } as const;
