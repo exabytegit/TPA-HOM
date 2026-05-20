@@ -1,5 +1,142 @@
 # Sandbox Test Log
 
+## v0.4 - Validacion sandbox inicial exitosa
+
+### Fecha/hora
+
+2026-05-20 17:17:54 -03:00
+
+### Resultado general
+
+La validacion sandbox inicial fue exitosa. El backend local pudo obtener token OAuth2 desde el authorization server sandbox de Toyota Plan y luego generar un link de suscripcion digital mediante el endpoint `generatelink`.
+
+No se documentan credenciales, tokens ni link completo generado. Solo se deja constancia del host devuelto y de que el link fue generado correctamente.
+
+### Ambiente
+
+- `NODE_ENV`: `development`
+- `TOYOTA_PLAN_ENV`: `sandbox`
+- `PORT`: `3000`
+- `seller`: `HOM`
+
+### Endpoints probados
+
+Healthcheck:
+
+```txt
+GET http://localhost:3000/health
+```
+
+Generacion de link:
+
+```txt
+POST http://localhost:3000/api/toyota-plan/generate-link
+```
+
+Body enviado:
+
+```json
+{
+  "slug": "hilux-4x4-dc-dx-24-tdi-at-plan-100"
+}
+```
+
+### Resultado del healthcheck
+
+Resultado: OK.
+
+- `status`: `ok`
+- `service`: `toyota-plan-adapter`
+- `environment`: `sandbox`
+- `nodeEnv`: `development`
+
+### Resultado OAuth
+
+Resultado: OK.
+
+El backend obtuvo correctamente un token OAuth2 desde el ambiente sandbox de Toyota Plan.
+
+No se documento ni se imprimio el valor del token OAuth.
+
+### Resultado generatelink
+
+Resultado: OK.
+
+Resultado resumido:
+
+- `healthcheck_ok`: `true`
+- `oauth_ok`: `true`
+- `generate_link_ok`: `true`
+- `link_generated`: `true`
+- `link_host`: `sdx.suscripcion.toyotaplan.com.ar`
+- `seller`: `HOM`
+- `modelId`: `114`
+- `planId`: `113`
+- `amount`: `558824.14`
+
+### Datos funcionales confirmados
+
+- `slug`: `hilux-4x4-dc-dx-24-tdi-at-plan-100`
+- `model`: `HILUX 4X4 D/C DX 2.4 TDI 6 A/T`
+- `plan`: `PLAN 100% DIF G 84M`
+- `modelId`: `114`
+- `planId`: `113`
+- `seller`: `HOM`
+- `amount`: `558824.14`
+- `link_host`: `sdx.suscripcion.toyotaplan.com.ar`
+- link completo: no documentado por seguridad
+
+### Validaciones confirmadas
+
+1. El backend local levanta correctamente en puerto `3000`.
+2. `GET /health` responde correctamente.
+3. El ambiente activo es `sandbox`.
+4. Las credenciales sandbox cargan desde `.env` local.
+5. `.env` esta ignorado por git.
+6. OAuth token sandbox funciona correctamente.
+7. No se imprimio el valor completo del token OAuth.
+8. No se imprimio el secreto cliente.
+9. No se imprimieron credenciales de autorizacion HTTP.
+10. `POST /api/toyota-plan/generate-link` funciona.
+11. El frontend/cliente solo envia `slug`.
+12. El backend resuelve internamente `modelId`.
+13. El backend resuelve internamente `planId`.
+14. El backend resuelve internamente `amount`.
+15. El backend usa seller `HOM`.
+16. Toyota Plan sandbox genera link correctamente.
+17. El link devuelto pertenece al host esperado `sdx.suscripcion.toyotaplan.com.ar`.
+18. La validacion de host del backend permite el link sandbox correcto.
+19. El amount se envia como numero decimal.
+20. PowerShell puede mostrar el amount con coma decimal por configuracion regional, pero la API recibio el numero correctamente.
+
+### Seguridad de logs
+
+En la revision de logs no se observaron:
+
+- valor completo del token OAuth
+- secreto cliente
+- credenciales de autorizacion HTTP
+- link completo generado
+
+### Observaciones
+
+- No se uso produccion.
+- No se modifico el catalogo.
+- No se documentaron credenciales.
+- No se documento el link completo porque contiene un identificador externo unico.
+
+### Proximos pasos
+
+1. Probar el resto de los slugs del catalogo.
+2. Registrar que `modelId`/`planId` funcionan en sandbox.
+3. Verificar si todos los planes estan habilitados para seller `HOM`.
+4. Preparar checklist de preproduccion.
+5. Definir estrategia de despliegue.
+6. Confirmar topologia real antes de usar `TRUST_PROXY=1`.
+7. Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorizacion formal de pase a produccion.
+
+---
+
 ## 2026-05-15 - Validacion operativa v0.3.1
 
 ### Resultado general
@@ -74,10 +211,9 @@ Resultado: OK para esta prueba parcial.
 
 En los logs observados no se imprimieron:
 
-- `access_token`
-- `client_secret`
-- `Authorization`
-- tokens Bearer
+- valor del token OAuth
+- secreto cliente
+- credenciales de autorizacion HTTP
 
 Nota: como no habia credenciales, no se llego a obtener token OAuth ni a llamar al endpoint externo `generatelink`.
 
@@ -119,8 +255,8 @@ Crear `.env` local no versionado a partir de `.env.example` y cargar credenciale
 
 ```env
 TOYOTA_PLAN_ENV=sandbox
-TOYOTA_PLAN_CLIENT_ID=...
-TOYOTA_PLAN_CLIENT_SECRET=...
+TOYOTA_PLAN_CLIENT_ID=[REDACTED]
+TOYOTA_PLAN_CLIENT_SECRET=[REDACTED]
 ```
 
 Luego repetir:

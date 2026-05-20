@@ -19,6 +19,25 @@ Backend adapter HOMU
 
 El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en el navegador.
 
+## Estado actual
+
+- v0.3.1: hardening previo a credenciales sandbox.
+- v0.4: validacion sandbox inicial exitosa.
+
+La primera prueba sandbox exitosa se realizo con el slug:
+
+```txt
+hilux-4x4-dc-dx-24-tdi-at-plan-100
+```
+
+La prueba confirmo el flujo:
+
+```txt
+backend local -> OAuth sandbox -> generatelink sandbox -> link sandbox valido
+```
+
+No se documenta el link completo generado porque contiene un identificador externo unico.
+
 ## Stack
 
 - Node.js
@@ -401,6 +420,18 @@ tests/
 - Recomendacion reforzada: cargar credenciales solo en `.env` local o secret manager.
 - Recordatorio: `.env` no debe commitearse.
 
+## Mejoras v0.4 - Validacion sandbox inicial exitosa
+
+- Backend local validado en `PORT=3000`.
+- `GET /health` respondio correctamente en ambiente `sandbox`.
+- OAuth sandbox validado correctamente.
+- `POST /api/toyota-plan/generate-link` genero link sandbox valido.
+- Slug validado: `hilux-4x4-dc-dx-24-tdi-at-plan-100`.
+- Host devuelto validado: `sdx.suscripcion.toyotaplan.com.ar`.
+- Seller usado por backend: `HOM`.
+- `amount` enviado como numero decimal: `558824.14`.
+- No se documentan credenciales, tokens ni link completo generado.
+
 ## Roadmap base de datos
 
 No hay base de datos implementada todavia. El catalogo actual vive en:
@@ -447,8 +478,12 @@ Tambien queda prevista una tabla de auditoria `toyota_plan_link_log`:
 
 ## Proximos pasos recomendados
 
-- Obtener credenciales sandbox reales.
-- Probar token y `generatelink` con uno o dos modelos.
+- Probar el resto de los slugs del catalogo.
+- Registrar que `modelId`/`planId` funcionan en sandbox.
+- Verificar si todos los planes estan habilitados para seller `HOM`.
+- Preparar checklist de preproduccion.
 - Definir persistencia de logs para produccion.
 - Definir alojamiento del backend.
+- Confirmar topologia real antes de usar `TRUST_PROXY=1`.
+- Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorizacion formal de pase a produccion.
 - Migrar catalogo a base de datos o panel administrable cuando los amounts requieran vigencia.

@@ -1,6 +1,6 @@
 # Proyecto: Integración API Suscripción Digital Toyota Plan — HOMU S.A.
 
-**Versión:** 0.3.1 hardening previo a credenciales sandbox
+**Versión:** 0.4 validación sandbox inicial exitosa
 **Concesionario:** HOMU S.A.  
 **Seller productivo:** `HOM`  
 **Objetivo:** integrar el sitio web del concesionario con la API pública de Suscripción Digital Toyota Plan para generar links de suscripción online por modelo y plan.
@@ -520,7 +520,7 @@ curl -X POST "https://auth.sdx.suscripcion.toyotaplan.com.ar/oauth2/token" \
 ```bash
 curl -X POST "https://sdx.suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer TU_ACCESS_TOKEN" \
+  -H "Authorization: [REDACTED]" \
   -d '{
     "modelId": "114",
     "planId": "113",
@@ -978,3 +978,120 @@ Las credenciales sandbox deben cargarse únicamente en:
 - secret manager del entorno de despliegue.
 
 Nunca commitear `.env`, `client_secret`, tokens OAuth ni headers `Authorization`.
+
+---
+
+## 24. Mejoras v0.4 — Validación sandbox inicial exitosa
+
+Se completó una validación sandbox exitosa de punta a punta para confirmar que el backend adapter puede operar contra la API de Suscripción Digital Toyota Plan en ambiente de pruebas.
+
+### 24.1 Qué se probó
+
+Ambiente local:
+
+- `NODE_ENV=development`
+- `TOYOTA_PLAN_ENV=sandbox`
+- `PORT=3000`
+- `seller=HOM`
+
+Healthcheck:
+
+```txt
+GET http://localhost:3000/health
+```
+
+Endpoint propio:
+
+```txt
+POST http://localhost:3000/api/toyota-plan/generate-link
+```
+
+Body enviado:
+
+```json
+{
+  "slug": "hilux-4x4-dc-dx-24-tdi-at-plan-100"
+}
+```
+
+### 24.2 Resultado obtenido
+
+La validación fue exitosa.
+
+El backend local pudo:
+
+1. Levantar correctamente en puerto `3000`.
+2. Responder `GET /health`.
+3. Cargar credenciales sandbox desde `.env` local.
+4. Obtener token OAuth2 desde el authorization server sandbox de Toyota Plan.
+5. Resolver internamente el catálogo a partir del `slug`.
+6. Llamar al endpoint sandbox `generatelink`.
+7. Recibir un link sandbox válido.
+8. Validar que el host del link devuelto corresponde al ambiente sandbox.
+
+Resultado resumido:
+
+- `healthcheck_ok`: `true`
+- `oauth_ok`: `true`
+- `generate_link_ok`: `true`
+- `link_generated`: `true`
+- `link_host`: `sdx.suscripcion.toyotaplan.com.ar`
+- `seller`: `HOM`
+- `modelId`: `114`
+- `planId`: `113`
+- `amount`: `558824.14`
+
+### 24.3 Datos funcionales confirmados
+
+- `slug`: `hilux-4x4-dc-dx-24-tdi-at-plan-100`
+- `model`: `HILUX 4X4 D/C DX 2.4 TDI 6 A/T`
+- `plan`: `PLAN 100% DIF G 84M`
+- `modelId`: `114`
+- `planId`: `113`
+- `seller`: `HOM`
+- `amount`: `558824.14`
+- `link_host`: `sdx.suscripcion.toyotaplan.com.ar`
+
+El link completo no se documenta porque contiene un identificador externo único.
+
+### 24.4 Qué queda validado técnicamente
+
+- El frontend/cliente local envía únicamente `slug`.
+- El backend resuelve internamente `modelId`, `planId`, `amount` y `seller`.
+- El seller utilizado es `HOM`.
+- El `amount` se envía como número decimal con punto.
+- PowerShell puede mostrar el amount con coma decimal por configuración regional, pero la API recibió el número correctamente.
+- OAuth sandbox funciona.
+- Toyota Plan sandbox genera link correctamente.
+- La validación de host del backend permite el link sandbox correcto.
+- `.env` está ignorado por git.
+- No se imprimió el valor completo del token OAuth.
+- No se imprimió el secreto cliente.
+- No se imprimieron credenciales de autorización HTTP.
+
+### 24.5 Qué no se debe documentar por seguridad
+
+No documentar ni commitear:
+
+- ID cliente real.
+- Secreto cliente real.
+- Valor del token OAuth.
+- Valor de headers de autorización HTTP.
+- Link completo generado.
+- Contenido completo de `.env`.
+
+Si alguno de esos datos aparece en documentación, reemplazarlo por:
+
+```txt
+[REDACTED]
+```
+
+### 24.6 Próximos pasos
+
+1. Probar el resto de los slugs del catálogo.
+2. Registrar qué `modelId`/`planId` funcionan en sandbox.
+3. Verificar si todos los planes están habilitados para seller `HOM`.
+4. Preparar checklist de preproducción.
+5. Definir estrategia de despliegue.
+6. Confirmar topología real antes de usar `TRUST_PROXY=1`.
+7. Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorización formal de pase a producción.
