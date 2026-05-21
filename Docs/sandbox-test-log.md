@@ -115,6 +115,26 @@ npm run smoke:sandbox
 
 ---
 
+## Observabilidad minima
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se agregan logs de negocio consistentes para OAuth y generación de links, con `correlationId`
+automático y métricas opcionales detrás de `ENABLE_METRICS=false`.
+
+### Confirmaciones
+
+- los logs conservan sanitización de secretos;
+- cada request mantiene `correlationId`;
+- `/metrics` permanece apagado por default;
+- si se habilita, expone counters básicos en memoria.
+
+---
+
 ## v0.4 - Validacion sandbox inicial exitosa
 
 ### Fecha/hora

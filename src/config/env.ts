@@ -5,6 +5,7 @@ dotenv.config();
 
 export type NodeEnv = "development" | "test" | "production";
 export type TrustProxyValue = boolean | number;
+export type BooleanFlagValue = boolean;
 
 export const parseTrustProxy = (rawValue: string | undefined): TrustProxyValue => {
   const value = (rawValue ?? "false").trim().toLowerCase();
@@ -23,6 +24,20 @@ export const parseTrustProxy = (rawValue: string | undefined): TrustProxyValue =
   }
 
   throw new Error("TRUST_PROXY must be false, true, 0, or a positive integer");
+};
+
+export const parseBooleanFlag = (rawValue: string | undefined, defaultValue = false): boolean => {
+  const value = (rawValue ?? String(defaultValue)).trim().toLowerCase();
+
+  if (value === "true" || value === "1") {
+    return true;
+  }
+
+  if (value === "false" || value === "0" || value === "") {
+    return false;
+  }
+
+  throw new Error("Boolean flag must be true, false, 1, or 0");
 };
 
 export const parseCorsAllowedOrigins = (rawValue: string | undefined, nodeEnv: NodeEnv): string[] => {
@@ -68,6 +83,7 @@ const rawEnvSchema = z
   PORT: z.coerce.number().int().positive().default(3000),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   TRUST_PROXY: z.string().default("false"),
+  ENABLE_METRICS: z.string().default("false"),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(10),
   TOYOTA_PLAN_OAUTH_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
@@ -104,6 +120,16 @@ const rawEnvSchema = z
         message: error instanceof Error ? error.message : "Invalid TRUST_PROXY"
       });
     }
+
+    try {
+      parseBooleanFlag(values.ENABLE_METRICS);
+    } catch (error) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ENABLE_METRICS"],
+        message: error instanceof Error ? error.message : "Invalid ENABLE_METRICS"
+      });
+    }
   });
 
 const rawEnv = rawEnvSchema.parse({
@@ -111,6 +137,7 @@ const rawEnv = rawEnvSchema.parse({
   PORT: process.env.PORT,
   CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS,
   TRUST_PROXY: process.env.TRUST_PROXY,
+  ENABLE_METRICS: process.env.ENABLE_METRICS,
   RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS,
   TOYOTA_PLAN_OAUTH_TIMEOUT_MS: process.env.TOYOTA_PLAN_OAUTH_TIMEOUT_MS,
@@ -143,7 +170,8 @@ const rawEnv = rawEnvSchema.parse({
 export const env = {
   ...rawEnv,
   CORS_ALLOWED_ORIGINS: parseCorsAllowedOrigins(rawEnv.CORS_ALLOWED_ORIGINS, rawEnv.NODE_ENV),
-  TRUST_PROXY: parseTrustProxy(rawEnv.TRUST_PROXY)
+  TRUST_PROXY: parseTrustProxy(rawEnv.TRUST_PROXY),
+  ENABLE_METRICS: parseBooleanFlag(rawEnv.ENABLE_METRICS)
 };
 
 export const assertToyotaCredentials = (): void => {

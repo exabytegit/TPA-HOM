@@ -8,6 +8,7 @@ import {
   isTransientNetworkError
 } from "../../utils/httpClient";
 import { logger, sanitizeForLog } from "../../utils/logger";
+import { incrementMetric } from "../../utils/metrics";
 import { tokenResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanRuntimeConfig, ToyotaPlanTokenResponse } from "./toyotaPlan.types";
 
@@ -49,6 +50,7 @@ export class ToyotaPlanAuthService {
 
   async refreshAccessToken(): Promise<string> {
     this.assertCredentials();
+    const startedAt = Date.now();
 
     const body = new URLSearchParams({
       client_id: this.config.clientId,
@@ -59,8 +61,10 @@ export class ToyotaPlanAuthService {
 
     for (let attempt = 1; attempt <= OAUTH_MAX_ATTEMPTS; attempt += 1) {
       try {
-        logger.info("Requesting Toyota Plan OAuth token", {
-          toyotaPlanEnvironment: this.config.environment,
+        incrementMetric("toyota_plan_oauth_refresh_started_total");
+        logger.info("toyota_plan.oauth.refresh.started", {
+          seller: this.config.seller,
+          durationMs: Date.now() - startedAt,
           oauthAttempt: attempt
         });
 
@@ -81,7 +85,11 @@ export class ToyotaPlanAuthService {
           expiresAtMs: Date.now() + tokenResponse.expires_in * 1000 - TOKEN_REFRESH_WINDOW_MS
         };
 
-        logger.info("Toyota Plan OAuth token cached", {
+        incrementMetric("toyota_plan_oauth_refresh_success_total");
+        logger.info("toyota_plan.oauth.refresh.success", {
+          seller: this.config.seller,
+          durationMs: Date.now() - startedAt,
+          statusCode: 200,
           expiresInSeconds: tokenResponse.expires_in,
           tokenType: tokenResponse.token_type
         });
@@ -92,7 +100,11 @@ export class ToyotaPlanAuthService {
         const statusCode = getErrorStatusCode(error);
         const isRetryable = isTransientNetworkError(error) && attempt < OAUTH_MAX_ATTEMPTS;
 
-        logger.error("Toyota Plan OAuth error", {
+        incrementMetric("toyota_plan_oauth_refresh_failed_total");
+        logger.error("toyota_plan.oauth.refresh.failed", {
+          seller: this.config.seller,
+          durationMs: Date.now() - startedAt,
+          errorCode: "TOYOTA_PLAN_AUTH_ERROR",
           oauthAttempt: attempt,
           statusCode,
           response: sanitizeForLog(responseData),
@@ -100,7 +112,10 @@ export class ToyotaPlanAuthService {
         });
 
         if (isRetryable) {
-          logger.warn("Transient Toyota Plan OAuth error, retrying", {
+          logger.warn("toyota_plan.oauth.refresh.failed", {
+            seller: this.config.seller,
+            durationMs: Date.now() - startedAt,
+            errorCode: "TOYOTA_PLAN_AUTH_ERROR",
             oauthAttempt: attempt,
             statusCode
           });
@@ -109,9 +124,13 @@ export class ToyotaPlanAuthService {
         }
 
         if (attempt === OAUTH_MAX_ATTEMPTS && isTransientNetworkError(error)) {
-          logger.error("Toyota Plan OAuth retry exhausted", {
+          logger.error("toyota_plan.oauth.refresh.failed", {
+            seller: this.config.seller,
+            durationMs: Date.now() - startedAt,
+            errorCode: "TOYOTA_PLAN_AUTH_ERROR",
             oauthAttempt: attempt,
-            statusCode
+            statusCode,
+            retryExhausted: true
           });
         }
 

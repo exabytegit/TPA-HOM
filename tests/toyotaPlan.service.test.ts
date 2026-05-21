@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HttpClient } from "../src/utils/httpClient";
 import { ToyotaPlanAuthService } from "../src/modules/toyotaPlan/toyotaPlanAuth.service";
 import { ToyotaPlanCatalogService } from "../src/modules/toyotaPlan/toyotaPlanCatalog.service";
 import { ToyotaPlanService } from "../src/modules/toyotaPlan/toyotaPlan.service";
 import { ToyotaPlanCatalogItem, ToyotaPlanRuntimeConfig } from "../src/modules/toyotaPlan/toyotaPlan.types";
+import { resetMetrics } from "../src/utils/metrics";
 
 const config: ToyotaPlanRuntimeConfig = {
   environment: "sandbox",
@@ -56,6 +57,44 @@ const timeoutError = Object.assign(new Error("timeout"), {
 });
 
 describe("ToyotaPlanService", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetMetrics();
+  });
+
+  it("emits business logs for link generation lifecycle", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const authHttpClient = createMockHttpClient({
+      access_token: "token-1",
+      expires_in: 3600,
+      token_type: "Bearer"
+    });
+    const generateHttpClient = createMockHttpClient({
+      success: true,
+      link: "https://sdx.suscripcion.toyotaplan.com.ar/?external=abc"
+    });
+
+    const service = new ToyotaPlanService(
+      new ToyotaPlanCatalogService([catalogItem]),
+      new ToyotaPlanAuthService(config, authHttpClient),
+      generateHttpClient,
+      config
+    );
+
+    await service.generateSubscriptionLink(catalogItem.slug, {
+      ip: "127.0.0.1",
+      userAgent: "vitest-agent"
+    });
+
+    const lines = consoleSpy.mock.calls.map(([line]) => String(line));
+    expect(
+      lines.some((line) => line.includes('"message":"toyota_plan.link_generation.started"'))
+    ).toBe(true);
+    expect(
+      lines.some((line) => line.includes('"message":"toyota_plan.link_generation.success"'))
+    ).toBe(true);
+  });
+
   it("generates a subscription link with mocked external APIs", async () => {
     const authHttpClient = createMockHttpClient({
       access_token: "token-1",

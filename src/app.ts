@@ -8,9 +8,11 @@ import { correlationIdMiddleware } from "./middlewares/correlationId";
 import { errorHandler } from "./middlewares/errorHandler";
 import { requestLogger } from "./middlewares/requestLogger";
 import { toyotaPlanRouter } from "./modules/toyotaPlan/toyotaPlan.routes";
+import { renderMetrics } from "./utils/metrics";
 
-export const createApp = () => {
+export const createApp = (options?: { enableMetrics?: boolean }) => {
   const app = express();
+  const enableMetrics = options?.enableMetrics ?? env.ENABLE_METRICS;
 
   app.set("trust proxy", env.TRUST_PROXY);
   app.use(helmet());
@@ -29,6 +31,12 @@ export const createApp = () => {
       nodeEnv: env.NODE_ENV
     });
   });
+
+  if (enableMetrics) {
+    app.get("/metrics", (_req, res) => {
+      res.type("text/plain").send(`${renderMetrics()}\n`);
+    });
+  }
 
   app.use("/api/toyota-plan", toyotaPlanRouter);
 

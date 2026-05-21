@@ -84,6 +84,7 @@ No hay credenciales reales en el repositorio.
 NODE_ENV=development
 PORT=3000
 TRUST_PROXY=false
+ENABLE_METRICS=false
 
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
@@ -114,6 +115,7 @@ TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION=suscripcion.toyotaplan.com.ar
 `TRUST_PROXY=false` es el default seguro para desarrollo o despliegue directo. Usar `TRUST_PROXY=1`
 solo cuando el backend este detras de un unico proxy reverso confiable que limpie o sobrescriba
 `X-Forwarded-For`.
+`ENABLE_METRICS=false` es el default. Si se activa, expone `/metrics` con counters basicos en memoria.
 
 ## Comandos
 
@@ -307,6 +309,24 @@ El logger sanitiza metadata de forma recursiva:
 
 Las respuestas externas de OAuth/API se registran sanitizadas. No se deben loguear objetos Axios
 completos ni headers sensibles sin pasar por el logger.
+
+## Observabilidad
+
+El backend mantiene observabilidad minima y operable:
+
+- `correlationId` automatico por request con header `x-correlation-id`;
+- logs de negocio para OAuth y generacion de links;
+- `requestLogger` con duracion por request HTTP;
+- `/metrics` opcional solo cuando `ENABLE_METRICS=true`.
+
+Eventos de negocio actuales:
+
+- `toyota_plan.link_generation.started`
+- `toyota_plan.link_generation.success`
+- `toyota_plan.link_generation.failed`
+- `toyota_plan.oauth.refresh.started`
+- `toyota_plan.oauth.refresh.success`
+- `toyota_plan.oauth.refresh.failed`
 
 ## Buenas practicas de frontend
 
@@ -505,6 +525,23 @@ npm run smoke:sandbox
 Esta herramienta usa el catalogo real y el service real para validar manualmente los slugs
 `enabled` contra Toyota Plan sandbox. No corre dentro de `npm test`, no se ejecuta si faltan
 credenciales sandbox y no imprime tokens ni links completos.
+
+## Metrics
+
+Si se habilita:
+
+```env
+ENABLE_METRICS=true
+```
+
+el backend expone:
+
+```txt
+GET /metrics
+```
+
+Con counters en memoria para eventos de negocio Toyota Plan. Esta implementacion es minima y no
+reemplaza una integracion formal con Prometheus, pero sirve para troubleshooting y validacion inicial.
 
 ## Roadmap base de datos
 

@@ -3,10 +3,12 @@ import { AppError } from "../../utils/appError";
 import {
   axiosHttpClient,
   getErrorResponseData,
+  getErrorStatusCode,
   HttpClient,
   isTimeoutError
 } from "../../utils/httpClient";
 import { logger, sanitizeForLog } from "../../utils/logger";
+import { incrementMetric } from "../../utils/metrics";
 import { generateLinkResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanAuthService, toyotaPlanAuthService } from "./toyotaPlanAuth.service";
 import {
@@ -34,8 +36,12 @@ export class ToyotaPlanService {
     slug: string,
     metadata: RequestMetadata = {}
   ): Promise<GenerateSubscriptionLinkResult> {
-    logger.info("Toyota Plan link generation requested", {
+    const startedAt = Date.now();
+    incrementMetric("toyota_plan_link_generation_started_total");
+    logger.info("toyota_plan.link_generation.started", {
       slug,
+      seller: this.config.seller,
+      durationMs: 0,
       ip: metadata.ip,
       userAgent: metadata.userAgent
     });
@@ -69,12 +75,15 @@ export class ToyotaPlanService {
 
       this.validateReturnedLinkHost(toyotaResponse.link);
 
-      logger.info("Toyota Plan link generated successfully", {
+      incrementMetric("toyota_plan_link_generation_success_total");
+      logger.info("toyota_plan.link_generation.success", {
         slug,
         modelId: payload.modelId,
         planId: payload.planId,
         amount: payload.amount,
         seller: payload.seller,
+        durationMs: Date.now() - startedAt,
+        statusCode: 200,
         ip: metadata.ip,
         userAgent: metadata.userAgent
       });
@@ -87,8 +96,12 @@ export class ToyotaPlanService {
         amount: catalogItem.amount
       };
     } catch (error) {
-      logger.error("Toyota Plan link generation failed", {
+      incrementMetric("toyota_plan_link_generation_failed_total");
+      logger.error("toyota_plan.link_generation.failed", {
         slug,
+        seller: this.config.seller,
+        durationMs: Date.now() - startedAt,
+        errorCode: error instanceof AppError ? error.code : "INTERNAL_ERROR",
         error: error instanceof Error ? error.message : "Unknown error",
         ip: metadata.ip,
         userAgent: metadata.userAgent
@@ -131,21 +144,36 @@ export class ToyotaPlanService {
       return generateLinkResponseSchema.parse(response);
     } catch (error) {
       const responseData = getErrorResponseData(error);
+      const statusCode = getErrorStatusCode(error);
 
       if (!alreadyRetried && this.isTokenExpiredResponse(responseData)) {
-        logger.warn("Toyota Plan token expired, refreshing once");
+        logger.warn("toyota_plan.link_generation.failed", {
+          seller: this.config.seller,
+          durationMs: 0,
+          errorCode: "TOYOTA_PLAN_LINK_ERROR",
+          reason: "token_expired_retry_once"
+        });
         const refreshedToken = await this.authService.refreshAccessToken();
         return this.callGenerateLink(payload, refreshedToken, true);
       }
 
       if (isTimeoutError(error)) {
-        logger.warn("Toyota Plan generate link timeout without automatic retry", {
+        logger.warn("toyota_plan.link_generation.failed", {
+          seller: this.config.seller,
+          durationMs: 0,
+          errorCode: "TOYOTA_PLAN_LINK_ERROR",
           reason: "non_idempotent_operation"
         });
       }
 
-      logger.error("Toyota Plan generate link error", {
+      logger.error("toyota_plan.link_generation.failed", {
+        modelId: payload.modelId,
+        planId: payload.planId,
+        seller: payload.seller,
+        durationMs: 0,
+        errorCode: "TOYOTA_PLAN_LINK_ERROR",
         response: sanitizeForLog(responseData),
+        statusCode,
         message: error instanceof Error ? error.message : "Unknown error"
       });
 

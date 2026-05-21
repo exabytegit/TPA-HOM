@@ -1,6 +1,6 @@
 # Proyecto: Integración API Suscripción Digital Toyota Plan — HOMU S.A.
 
-**Versión:** 0.4.3 política conservadora de retries
+**Versión:** 0.4.4 observabilidad mínima
 **Concesionario:** HOMU S.A.  
 **Seller productivo:** `HOM`  
 **Objetivo:** integrar el sitio web del concesionario con la API pública de Suscripción Digital Toyota Plan para generar links de suscripción online por modelo y plan.
@@ -1326,3 +1326,66 @@ Sin incluir:
 - tokens;
 - links completos;
 - contenido de `.env`.
+
+---
+
+## 29. Observabilidad mínima
+
+Se implementa observabilidad mínima orientada a operación y troubleshooting, evitando sobredimensionar la solución.
+
+### 29.1 Correlation ID
+
+Cada request puede transportar:
+
+```txt
+x-correlation-id
+```
+
+Si el cliente no lo envía, el backend genera uno. El mismo identificador se devuelve en la respuesta y se adjunta automáticamente a los logs.
+
+### 29.2 Logs de negocio
+
+Eventos actuales:
+
+- `toyota_plan.link_generation.started`
+- `toyota_plan.link_generation.success`
+- `toyota_plan.link_generation.failed`
+- `toyota_plan.oauth.refresh.started`
+- `toyota_plan.oauth.refresh.success`
+- `toyota_plan.oauth.refresh.failed`
+
+Cada evento incluye, según aplique:
+
+- `correlationId`
+- `slug`
+- `modelId`
+- `planId`
+- `seller`
+- `durationMs`
+- `statusCode`
+- `errorCode`
+
+### 29.3 Datos sensibles no logueados
+
+No se loguean:
+
+- tokens OAuth;
+- secreto cliente;
+- headers `Authorization`;
+- links completos generados.
+
+### 29.4 Métricas mínimas
+
+Se agrega endpoint opcional:
+
+```txt
+GET /metrics
+```
+
+Detrás de:
+
+```env
+ENABLE_METRICS=false
+```
+
+Si se activa, expone counters en memoria para eventos de negocio Toyota Plan. La implementación es deliberadamente simple y sirve como paso inicial antes de una integración más completa con Prometheus.

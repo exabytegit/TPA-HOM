@@ -95,4 +95,15 @@ describe("app security middleware", () => {
 
     await request(app).get("/health").set("Origin", "http://localhost:5173").expect(200);
   });
+
+  it("does not expose /metrics by default", async () => {
+    await request(createApp()).get("/metrics").expect(404);
+  });
+
+  it("exposes /metrics when explicitly enabled", async () => {
+    const response = await request(createApp({ enableMetrics: true })).get("/metrics").expect(200);
+
+    expect(response.text).toContain("toyota_plan_link_generation_started_total");
+    expect(response.headers["content-type"]).toContain("text/plain");
+  });
 });

@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ToyotaPlanAuthService } from "../src/modules/toyotaPlan/toyotaPlanAuth.service";
 import { ToyotaPlanRuntimeConfig } from "../src/modules/toyotaPlan/toyotaPlan.types";
 import { HttpClient } from "../src/utils/httpClient";
+import { resetMetrics } from "../src/utils/metrics";
 
 const config: ToyotaPlanRuntimeConfig = {
   environment: "sandbox",
@@ -28,6 +29,33 @@ const createDeferred = <T>() => {
 };
 
 describe("ToyotaPlanAuthService", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetMetrics();
+  });
+
+  it("emits business logs for oauth refresh lifecycle", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const httpClient: HttpClient = {
+      post: vi.fn().mockResolvedValue({
+        access_token: "shared-token",
+        expires_in: 3600,
+        token_type: "Bearer"
+      })
+    };
+    const service = new ToyotaPlanAuthService(config, httpClient);
+
+    await service.getAccessToken();
+
+    const lines = consoleSpy.mock.calls.map(([line]) => String(line));
+    expect(lines.some((line) => line.includes('"message":"toyota_plan.oauth.refresh.started"'))).toBe(
+      true
+    );
+    expect(lines.some((line) => line.includes('"message":"toyota_plan.oauth.refresh.success"'))).toBe(
+      true
+    );
+  });
+
   it("retries OAuth once on transient 503 and then succeeds", async () => {
     const httpClient: HttpClient = {
       post: vi
