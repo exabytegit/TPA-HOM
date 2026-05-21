@@ -24,6 +24,7 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 - [API Contract](./Docs/api-contract.md)
 - [Error Codes](./Docs/error-codes.md)
 - [Deployment Checklist](./Docs/deployment-checklist.md)
+- [Toyota Plan Catalog Issues](./Docs/toyota-plan-catalog-issues.md)
 - [Sandbox Test Log](./Docs/sandbox-test-log.md)
 - [Project Manual](./Docs/proyecto_integracion_toyota_plan_suscripcion_digita.md)
 
@@ -34,6 +35,7 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 - v0.4.1: deduplicacion de refresh OAuth para requests concurrentes.
 - v0.4.2: correlation ID por request para trazabilidad end-to-end.
 - v0.5.1: modernizacion del toolchain TypeScript con `module: "Node16"` y `moduleResolution: "node16"`.
+- v0.5.2: documentacion funcional para resolver inconsistencias de catalogo TPA detectadas en sandbox.
 
 La primera prueba sandbox exitosa se realizo con el slug:
 

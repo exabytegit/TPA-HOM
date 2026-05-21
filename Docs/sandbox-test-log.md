@@ -1,5 +1,32 @@
 # Sandbox Test Log
 
+## v0.5.2 - Resolucion de inconsistencias de catalogo TPA
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se preparo documentacion funcional para escalar a Toyota Plan/TPA las inconsistencias
+detectadas en sandbox sobre `3` slugs del catalogo actual.
+
+### Confirmaciones
+
+- el adapter sigue validado tecnicamente;
+- OAuth y `generateLink` siguen operativos en sandbox;
+- seller `HOM` sigue validado;
+- no se modifico el catalogo;
+- no se modifico codigo fuente;
+- no se tocaron credenciales ni `.env`;
+- no se usaron links completos en la documentacion.
+
+### Documento de referencia
+
+- [Toyota Plan Catalog Issues](./toyota-plan-catalog-issues.md)
+
+---
+
 ## v0.5.1 - TypeScript toolchain modernization
 
 ### Fecha

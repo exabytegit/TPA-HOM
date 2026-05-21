@@ -1427,3 +1427,29 @@ Confirmaciones:
 - no se utilizo produccion.
 
 Si se activa, expone counters en memoria para eventos de negocio Toyota Plan. La implementación es deliberadamente simple y sirve como paso inicial antes de una integración más completa con Prometheus.
+
+---
+
+## 31. Mejoras v0.5.2 - Resolucion de inconsistencias de catalogo TPA
+
+Se agrega documentacion funcional para tratar las diferencias detectadas entre el catalogo
+local y la validacion de negocio observada en Toyota Plan sandbox.
+
+Estado de referencia:
+
+- smoke test del catalogo: `6/9` exitosos;
+- `3/9` fallidos por rechazo funcional del lado TPA;
+- adapter tecnico validado;
+- OAuth validado;
+- seller `HOM` validado;
+- host sandbox validado.
+
+Decision operativa:
+
+- no modificar todavia `src/config/toyota-plan.catalog.json`;
+- no ajustar amounts sin confirmacion oficial;
+- escalar a Toyota Plan/TPA con detalle de `slug`, `modelId`, `planId` y `amount`.
+
+Documento de referencia:
+
+- `Docs/toyota-plan-catalog-issues.md`

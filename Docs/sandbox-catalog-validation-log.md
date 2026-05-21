@@ -42,3 +42,13 @@ Interpretacion operativa:
 - el rechazo parece venir por validacion de negocio del lado Toyota Plan para la
   combinacion `modelId + planId + amount`;
 - no se observaron secretos, tokens ni links completos en la salida del smoke test.
+
+## Follow-up
+
+Para el siguiente paso de gestion funcional ver:
+
+- [Toyota Plan Catalog Issues](./toyota-plan-catalog-issues.md)
+
+Recomendacion actual:
+
+- no modificar el catalogo local hasta recibir confirmacion oficial de Toyota Plan/TPA.
