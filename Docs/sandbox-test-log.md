@@ -1,5 +1,41 @@
 # Sandbox Test Log
 
+## v0.5.1 - TypeScript toolchain modernization
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se resolvio la deprecacion de `moduleResolution=node10` mediante una migracion real del
+toolchain TypeScript a:
+
+- `module: "Node16"`
+- `moduleResolution: "node16"`
+
+No se utilizo `ignoreDeprecations`.
+
+### Validaciones
+
+- `npm run typecheck`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 43 tests
+- `npm run build`: OK
+- `npm audit`: OK, 0 vulnerabilidades
+- `git diff --check`: OK funcionalmente, con warnings CRLF normales en Windows
+
+### Confirmaciones
+
+- no hubo cambios funcionales en el adapter;
+- no se modifico la logica de negocio;
+- no se modifico `.env`;
+- no se tocaron credenciales;
+- no se modifico el catalogo;
+- no se uso produccion.
+
+---
+
 ## v0.5 - Validacion integral post-observabilidad minima
 
 ### Fecha

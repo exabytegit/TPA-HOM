@@ -33,6 +33,7 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 - v0.4: validacion sandbox inicial exitosa.
 - v0.4.1: deduplicacion de refresh OAuth para requests concurrentes.
 - v0.4.2: correlation ID por request para trazabilidad end-to-end.
+- v0.5.1: modernizacion del toolchain TypeScript con `module: "Node16"` y `moduleResolution: "node16"`.
 
 La primera prueba sandbox exitosa se realizo con el slug:
 
@@ -61,6 +62,12 @@ No se documenta el link completo generado porque contiene un identificador exter
 - express-rate-limit
 - Vitest
 - ESLint / Prettier
+
+## Notas de toolchain
+
+- `tsconfig.json` usa `module: "Node16"` y `moduleResolution: "node16"` para evitar la
+  deprecacion de `moduleResolution=node10` en TypeScript moderno, sin cambiar el
+  comportamiento funcional actual del adapter.
 
 ## Instalacion
 

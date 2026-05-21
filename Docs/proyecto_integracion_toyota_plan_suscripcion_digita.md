@@ -1388,4 +1388,42 @@ Detrás de:
 ENABLE_METRICS=false
 ```
 
+Si se activa, expone counters en memoria para eventos de negocio Toyota Plan. La implementacion es deliberadamente simple y sirve como paso inicial antes de una integracion mas completa con Prometheus.
+
+---
+
+## 30. Mejoras v0.5.1 - TypeScript toolchain modernization
+
+Se resolvio la deprecacion de `moduleResolution=node10` en el proyecto sin recurrir a
+`ignoreDeprecations`.
+
+Decision aplicada:
+
+- `module: "Node16"`
+- `moduleResolution: "node16"`
+
+Motivo:
+
+- alinea la configuracion con Node.js moderno;
+- evita depender de una opcion deprecada del compilador;
+- mantiene el comportamiento funcional actual del adapter.
+
+Validaciones ejecutadas:
+
+- `npm run typecheck`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 43 tests
+- `npm run build`: OK
+- `npm audit`: OK, 0 vulnerabilidades
+- `git diff --check`: OK funcionalmente, con warnings CRLF normales en Windows
+
+Confirmaciones:
+
+- no hubo cambios funcionales en el adapter;
+- no se modifico la logica de negocio;
+- no se modifico `.env`;
+- no se tocaron credenciales;
+- no se modifico el catalogo JSON;
+- no se utilizo produccion.
+
 Si se activa, expone counters en memoria para eventos de negocio Toyota Plan. La implementación es deliberadamente simple y sirve como paso inicial antes de una integración más completa con Prometheus.
