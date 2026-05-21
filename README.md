@@ -19,6 +19,14 @@ Backend adapter HOMU
 
 El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en el navegador.
 
+## Documentos
+
+- [API Contract](./Docs/api-contract.md)
+- [Error Codes](./Docs/error-codes.md)
+- [Deployment Checklist](./Docs/deployment-checklist.md)
+- [Sandbox Test Log](./Docs/sandbox-test-log.md)
+- [Project Manual](./Docs/proyecto_integracion_toyota_plan_suscripcion_digita.md)
+
 ## Estado actual
 
 - v0.3.1: hardening previo a credenciales sandbox.
