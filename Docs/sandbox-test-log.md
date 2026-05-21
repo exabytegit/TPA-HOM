@@ -82,6 +82,39 @@ Se agrega una politica de resiliencia HTTP conservadora para reducir el riesgo d
 
 ---
 
+## Herramienta operativa de validacion de catalogo sandbox
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se agrega el script manual:
+
+```txt
+scripts/smokeSandboxCatalog.ts
+```
+
+Y el comando:
+
+```bash
+npm run smoke:sandbox
+```
+
+### Confirmaciones
+
+- usa el catalogo real;
+- valida solo ambiente sandbox;
+- aborta si detecta production;
+- no corre automaticamente con `npm test`;
+- no imprime tokens;
+- no imprime secrets;
+- no imprime links completos;
+- genera resumen documental en `Docs/sandbox-catalog-validation-log.md`.
+
+---
+
 ## v0.4 - Validacion sandbox inicial exitosa
 
 ### Fecha/hora

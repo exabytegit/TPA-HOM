@@ -1259,3 +1259,70 @@ Se agregan pruebas para validar:
 - no retry OAuth en `400 invalid_client`;
 - no retry de `generateLink` ante timeout;
 - mantenimiento del retry actual por token expirado.
+
+---
+
+## 28. Herramienta operativa de validación del catálogo sandbox
+
+Se agrega un script manual para validar todos los `slug` habilitados del catálogo contra Toyota Plan sandbox:
+
+```txt
+scripts/smokeSandboxCatalog.ts
+```
+
+Comando:
+
+```bash
+npm run smoke:sandbox
+```
+
+### 28.1 Objetivo
+
+Permitir una validación controlada del catálogo real sin convertir este flujo en un test unitario automático.
+
+### 28.2 Reglas de ejecución
+
+- carga `.env`;
+- exige `TOYOTA_PLAN_ENV=sandbox`;
+- rechaza ejecución si detecta `TOYOTA_PLAN_ENV=production`;
+- exige credenciales sandbox locales;
+- no corre dentro de `npm test`;
+- no modifica catálogo;
+- no imprime token OAuth;
+- no imprime secrets;
+- no imprime links completos.
+
+### 28.3 Resultado esperado
+
+Para cada item `enabled`, registra:
+
+- `slug`
+- `modelId`
+- `planId`
+- `seller`
+- `amount`
+- `success`
+- `status`
+- `link_host`
+
+Además genera un resumen con:
+
+- total de items;
+- cantidad exitosa;
+- cantidad fallida;
+- listado de fallidos con error sanitizado.
+
+### 28.4 Salida documental
+
+El script guarda un resumen en:
+
+```txt
+Docs/sandbox-catalog-validation-log.md
+```
+
+Sin incluir:
+
+- credenciales;
+- tokens;
+- links completos;
+- contenido de `.env`.

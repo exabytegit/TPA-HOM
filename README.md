@@ -111,6 +111,7 @@ solo cuando el backend este detras de un unico proxy reverso confiable que limpi
 
 ```bash
 npm run dev        # servidor en desarrollo
+npm run smoke:sandbox # validacion controlada del catalogo contra sandbox
 npm run build      # compila TypeScript a dist/
 npm start          # ejecuta dist/server.js
 npm run lint       # ESLint
@@ -166,6 +167,16 @@ Response exitosa esperada:
   "amount": 558824.14
 }
 ```
+
+Validacion controlada del catalogo sandbox:
+
+```bash
+npm run smoke:sandbox
+```
+
+El script carga `.env`, exige `TOYOTA_PLAN_ENV=sandbox`, aborta si detecta `production`, usa el
+catalogo real y genera un resumen seguro en `Docs/sandbox-catalog-validation-log.md` sin imprimir
+tokens, secrets ni links completos.
 
 ## Endpoint
 
@@ -468,6 +479,24 @@ tests/
 - `generateLink` no reintenta timeouts ni errores transitorios por defecto, porque es una operacion `POST` no idempotente.
 - `generateLink` mantiene solo el retry actual cuando Toyota responde token expirado.
 - Mientras Toyota no confirme idempotency key o garantia equivalente, no conviene activar retry automatico sobre `generateLink`.
+
+## Herramienta Operativa De Catalogo Sandbox
+
+Se agrega el script:
+
+```txt
+scripts/smokeSandboxCatalog.ts
+```
+
+Y el comando:
+
+```bash
+npm run smoke:sandbox
+```
+
+Esta herramienta usa el catalogo real y el service real para validar manualmente los slugs
+`enabled` contra Toyota Plan sandbox. No corre dentro de `npm test`, no se ejecuta si faltan
+credenciales sandbox y no imprime tokens ni links completos.
 
 ## Roadmap base de datos
 
