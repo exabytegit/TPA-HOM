@@ -23,6 +23,7 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 
 - v0.3.1: hardening previo a credenciales sandbox.
 - v0.4: validacion sandbox inicial exitosa.
+- v0.4.1: deduplicacion de refresh OAuth para requests concurrentes.
 
 La primera prueba sandbox exitosa se realizo con el slug:
 
@@ -431,6 +432,16 @@ tests/
 - Seller usado por backend: `HOM`.
 - `amount` enviado como numero decimal: `558824.14`.
 - No se documentan credenciales, tokens ni link completo generado.
+
+## Mejoras v0.4.1 - Deduplicacion de refresh OAuth
+
+- `ToyotaPlanAuthService` deduplica refreshes OAuth concurrentes.
+- Si el token cacheado no es valido y ya hay un refresh en curso, las requests esperan la misma promesa.
+- Si no hay refresh en curso, se crea un unico refresh y se limpia la referencia en `finally`.
+- La ventana de renovacion anticipada de token se mantiene.
+- El retry unico por token expirado en `ToyotaPlanService` se mantiene.
+- No se loguean tokens, secretos ni headers de autorizacion.
+- Tests cubren llamadas concurrentes y limpieza de promesa tras fallo de refresh.
 
 ## Roadmap base de datos
 

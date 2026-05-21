@@ -1,5 +1,38 @@
 # Sandbox Test Log
 
+## v0.4.1 - Deduplicacion de refresh OAuth
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se agrego una mejora tecnica de concurrencia en `ToyotaPlanAuthService` para deduplicar refreshes OAuth cuando no hay token vigente y llegan multiples requests al mismo tiempo.
+
+La validacion sandbox v0.4 sigue vigente. Esta mejora no cambia credenciales, catalogo, endpoints ni ambiente.
+
+### Confirmaciones
+
+- No se documentan credenciales.
+- No se documentan tokens.
+- No se documentan headers de autorizacion.
+- No se documenta link completo.
+- El frontend/cliente sigue enviando solo `slug`.
+- El seller sigue siendo `HOM`.
+- El ambiente por defecto sigue siendo `sandbox`.
+
+### Tests
+
+Se agregaron pruebas automatizadas para:
+
+- deduplicar llamadas concurrentes a `getAccessToken()`;
+- confirmar que el HTTP client OAuth se llama una sola vez;
+- confirmar que todas las llamadas reciben el mismo token;
+- confirmar que, si falla un refresh, el intento posterior puede volver a pedir token.
+
+---
+
 ## v0.4 - Validacion sandbox inicial exitosa
 
 ### Fecha/hora

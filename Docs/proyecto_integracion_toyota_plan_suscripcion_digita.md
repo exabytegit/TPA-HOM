@@ -1,6 +1,6 @@
 # Proyecto: Integración API Suscripción Digital Toyota Plan — HOMU S.A.
 
-**Versión:** 0.4 validación sandbox inicial exitosa
+**Versión:** 0.4.1 deduplicación de refresh OAuth
 **Concesionario:** HOMU S.A.  
 **Seller productivo:** `HOM`  
 **Objetivo:** integrar el sitio web del concesionario con la API pública de Suscripción Digital Toyota Plan para generar links de suscripción online por modelo y plan.
@@ -1095,3 +1095,60 @@ Si alguno de esos datos aparece en documentación, reemplazarlo por:
 5. Definir estrategia de despliegue.
 6. Confirmar topología real antes de usar `TRUST_PROXY=1`.
 7. Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorización formal de pase a producción.
+
+---
+
+## 25. Mejoras v0.4.1 — Deduplicación de refresh OAuth
+
+Se agrega deduplicación del refresh OAuth en memoria para evitar una race condition cuando el token cacheado vence y llegan múltiples requests concurrentes.
+
+### 25.1 Problema resuelto
+
+Sin deduplicación, varias solicitudes simultáneas podían detectar token vencido y disparar varias llamadas paralelas al authorization server de Toyota Plan.
+
+### 25.2 Comportamiento implementado
+
+`ToyotaPlanAuthService` mantiene una promesa privada de refresh en curso:
+
+```txt
+tokenRefreshPromise
+```
+
+Reglas:
+
+1. Si existe token cacheado vigente, se reutiliza.
+2. Si no existe token vigente y ya hay refresh en curso, se espera la misma promesa.
+3. Si no existe token vigente y no hay refresh en curso, se crea un único refresh.
+4. La promesa se limpia en `finally`, tanto si el refresh termina OK como si falla.
+5. La ventana de expiración anticipada se mantiene.
+6. El reintento único por token expirado en generación de link se mantiene.
+
+### 25.3 Seguridad
+
+La mejora no cambia el manejo de credenciales.
+
+No se loguean:
+
+- tokens OAuth;
+- secreto cliente;
+- headers de autorización HTTP.
+
+### 25.4 Tests agregados
+
+Se agregan pruebas para:
+
+- múltiples llamadas simultáneas a `getAccessToken()` con token no disponible;
+- verificación de una sola llamada al HTTP client OAuth;
+- verificación de que todas las llamadas reciben el mismo token;
+- limpieza de la promesa tras fallo de refresh;
+- posibilidad de retry posterior luego de un fallo.
+
+### 25.5 Alcance
+
+No se modifica:
+
+- catálogo JSON;
+- endpoint público propio;
+- flujo frontend, que sigue enviando solo `slug`;
+- ambiente por defecto, que sigue siendo `sandbox`;
+- configuración de producción.

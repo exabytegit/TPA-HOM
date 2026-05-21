@@ -15,6 +15,7 @@ interface CachedToken {
 
 export class ToyotaPlanAuthService {
   private cachedToken?: CachedToken;
+  private tokenRefreshPromise: Promise<string> | null = null;
 
   constructor(
     private readonly config: ToyotaPlanRuntimeConfig = toyotaPlanConfig,
@@ -26,7 +27,17 @@ export class ToyotaPlanAuthService {
       return this.cachedToken.accessToken;
     }
 
-    return this.refreshAccessToken();
+    if (this.tokenRefreshPromise) {
+      return this.tokenRefreshPromise;
+    }
+
+    this.tokenRefreshPromise = this.refreshAccessToken();
+
+    try {
+      return await this.tokenRefreshPromise;
+    } finally {
+      this.tokenRefreshPromise = null;
+    }
   }
 
   async refreshAccessToken(): Promise<string> {
