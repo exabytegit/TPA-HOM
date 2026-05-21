@@ -1,5 +1,69 @@
 # Sandbox Test Log
 
+## v0.5 - Validacion integral post-observabilidad minima
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se ejecuto una validacion integral posterior a `v0.5` sobre el backend adapter en ambiente
+`sandbox`, manteniendo el catalogo actual, sin usar produccion y sin exponer secretos.
+
+### Verificaciones operativas
+
+- `npm run typecheck`: OK
+- `npm run lint`: OK
+- `npm test`: OK
+- `npm run build`: OK
+- `npm audit`: OK, sin vulnerabilidades reportadas
+- `git diff --check`: OK
+- `.env` sigue ignorado por git
+- `GET /health`: OK en `http://localhost:3000/health`
+- `/metrics`: apagado por default en la instancia validada (`404`)
+- `npm run smoke:sandbox`: OK con ejecucion completa sobre el catalogo habilitado
+
+### Resumen del smoke test
+
+- `total_items`: `9`
+- `success_count`: `6`
+- `failed_count`: `3`
+- `link_host` exitoso en todos los casos favorables: `sdx.suscripcion.toyotaplan.com.ar`
+
+Slugs exitosos:
+
+- `hilux-4x4-dc-dx-24-tdi-at-plan-100`
+- `yaris-cross-xli-15-cvt-flex-70-30`
+- `corolla-cross-xli-20-cvt-70-30`
+- `hilux-4x2-dc-dx-24-tdi-mt-70-30`
+- `yaris-xs-15-cvt-5p-70-30`
+- `corolla-20-xli-cvt-70-30`
+
+Slugs fallidos:
+
+- `hiace-furgon-l2h2-28-tdi-at-plan-100`
+- `yaris-cross-xei-hev-15-ecvt-flex-plan-100`
+- `yaris-xs-cvt-5p-flex-plan-100`
+
+Causa probable sanitizada de fallidos:
+
+- rechazo funcional de Toyota Plan sandbox para la combinacion `modelId + planId + amount`,
+  con mensaje equivalente a que el valor declarado de cuota 1 supera el valor de lista TPA.
+
+### Seguridad y trazabilidad
+
+- no se imprimieron `client_id`, `client_secret`, `access_token`, `Authorization`
+  ni `Bearer token`;
+- no se imprimieron links completos, solo `linkHost`;
+- la respuesta HTTP de `/health` devolvio `x-correlation-id`;
+- observacion: el smoke script usa el service real de forma directa y no entra por el
+  middleware HTTP, por eso su salida de consola no es una prueba operativa suficiente
+  para exigir `correlationId` en cada linea; esa parte queda cubierta por la capa HTTP
+  y por la suite automatizada existente.
+
+---
+
 ## v0.4.1 - Deduplicacion de refresh OAuth
 
 ### Fecha
