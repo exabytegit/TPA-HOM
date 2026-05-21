@@ -1,6 +1,6 @@
 # Proyecto: Integración API Suscripción Digital Toyota Plan — HOMU S.A.
 
-**Versión:** 0.4.1 deduplicación de refresh OAuth
+**Versión:** 0.4.3 política conservadora de retries
 **Concesionario:** HOMU S.A.  
 **Seller productivo:** `HOM`  
 **Objetivo:** integrar el sitio web del concesionario con la API pública de Suscripción Digital Toyota Plan para generar links de suscripción online por modelo y plan.
@@ -1152,3 +1152,110 @@ No se modifica:
 - flujo frontend, que sigue enviando solo `slug`;
 - ambiente por defecto, que sigue siendo `sandbox`;
 - configuración de producción.
+
+---
+
+## 26. Mejoras v0.4.2 — Correlation ID y trazabilidad
+
+Se agrega trazabilidad transversal por request mediante correlation ID, sin modificar el contrato funcional del backend y sin requerir pasar el identificador manualmente por controllers o services.
+
+### 26.1 Qué se agrega
+
+- middleware `correlationId`;
+- `AsyncLocalStorage` de Node.js;
+- lectura de `x-correlation-id` entrante;
+- generación automática con `randomUUID()` cuando no existe header;
+- devolución de `x-correlation-id` en la respuesta;
+- helper `getCorrelationId()`.
+
+### 26.2 Comportamiento
+
+1. Si el cliente envía `x-correlation-id`, se reutiliza.
+2. Si no lo envía, el backend genera uno nuevo.
+3. El correlation ID queda disponible durante todo el ciclo del request.
+4. El logger lo adjunta automáticamente a cada log.
+5. La sanitización de secretos y tokens no cambia.
+
+### 26.3 Alcance
+
+La mejora no cambia:
+
+- endpoints públicos;
+- body de requests;
+- seller `HOM`;
+- catálogo JSON;
+- ambiente por defecto `sandbox`;
+- credenciales.
+
+La única diferencia visible hacia el cliente es el header de respuesta:
+
+```txt
+x-correlation-id
+```
+
+### 26.4 Tests agregados
+
+Se agregan pruebas para validar:
+
+- generación automática de correlation ID;
+- respeto del correlation ID entrante;
+- devolución del header en la respuesta;
+- inclusión automática en logs;
+- mantenimiento de sanitización de secrets;
+- aislamiento correcto entre requests concurrentes.
+
+---
+
+## 27. Mejoras v0.4.3 — Política conservadora de retries
+
+Se agrega resiliencia HTTP conservadora para evitar riesgo de generar links duplicados en Toyota Plan.
+
+### 27.1 Principio de diseño
+
+El endpoint `generatelink` es un `POST` que puede crear o materializar un link externo. Por esa razón no se implementan retries ciegos por timeout o error transitorio sobre `generateLink`.
+
+### 27.2 Timeouts separados
+
+Se agregan timeouts independientes:
+
+```env
+TOYOTA_PLAN_OAUTH_TIMEOUT_MS=15000
+TOYOTA_PLAN_GENERATE_LINK_TIMEOUT_MS=15000
+```
+
+Esto permite ajustar el comportamiento de OAuth y de `generateLink` por separado.
+
+### 27.3 Retry permitido para OAuth
+
+OAuth sí admite retry conservador porque obtener token no crea links externos.
+
+Reglas:
+
+- máximo `2` intentos en total;
+- backoff corto;
+- solo ante errores de red transitorios o `502`, `503`, `504`;
+- no reintentar `invalid_client`, `invalid_request` ni otros `4xx`.
+
+Además, quedan registrados logs sanitizados con:
+
+- número de intento OAuth;
+- error transitorio;
+- retry agotado.
+
+### 27.4 Política para generateLink
+
+`generateLink` mantiene esta política:
+
+- sí reintentar una sola vez cuando Toyota responde token expirado;
+- no reintentar automáticamente timeouts;
+- no reintentar automáticamente errores transitorios de red;
+- no activar retries automáticos mientras Toyota no confirme idempotency key o garantía equivalente.
+
+### 27.5 Tests agregados
+
+Se agregan pruebas para validar:
+
+- retry OAuth en `503` seguido de éxito;
+- no retry OAuth en `400 invalid_client`;
+- no retry de `generateLink` ante timeout;
+- mantenimiento del retry actual por token expirado.

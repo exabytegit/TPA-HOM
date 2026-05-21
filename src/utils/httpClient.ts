@@ -46,3 +46,40 @@ export const getErrorStatusCode = (error: unknown): number | undefined => {
 
   return undefined;
 };
+
+export const getErrorCode = (error: unknown): string | undefined => {
+  if (axios.isAxiosError(error)) {
+    return error.code;
+  }
+
+  if (error && typeof error === "object" && "code" in error) {
+    const code = error.code;
+    return typeof code === "string" ? code : undefined;
+  }
+
+  return undefined;
+};
+
+export const isTimeoutError = (error: unknown): boolean => {
+  const code = getErrorCode(error);
+  return code === "ECONNABORTED" || code === "ETIMEDOUT";
+};
+
+export const isRetryableHttpStatus = (statusCode: number | undefined): boolean =>
+  statusCode === 502 || statusCode === 503 || statusCode === 504;
+
+export const isTransientNetworkError = (error: unknown): boolean => {
+  const statusCode = getErrorStatusCode(error);
+  if (isRetryableHttpStatus(statusCode)) {
+    return true;
+  }
+
+  const code = getErrorCode(error);
+  return (
+    code === "ECONNRESET" ||
+    code === "ENOTFOUND" ||
+    code === "ECONNREFUSED" ||
+    code === "EAI_AGAIN" ||
+    isTimeoutError(error)
+  );
+};

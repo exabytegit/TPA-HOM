@@ -12,6 +12,8 @@ export const toyotaPlanConfig = {
   scope: env.TOYOTA_PLAN_SCOPE,
   clientId: env.TOYOTA_PLAN_CLIENT_ID,
   clientSecret: env.TOYOTA_PLAN_CLIENT_SECRET,
+  oauthTimeoutMs: env.TOYOTA_PLAN_OAUTH_TIMEOUT_MS,
+  generateLinkTimeoutMs: env.TOYOTA_PLAN_GENERATE_LINK_TIMEOUT_MS,
   tokenUrl:
     env.TOYOTA_PLAN_ENV === "production"
       ? env.TOYOTA_PLAN_TOKEN_URL_PRODUCTION

@@ -1,6 +1,11 @@
 import { toyotaPlanConfig } from "../../config/toyotaPlanConfig";
 import { AppError } from "../../utils/appError";
-import { axiosHttpClient, getErrorResponseData, HttpClient } from "../../utils/httpClient";
+import {
+  axiosHttpClient,
+  getErrorResponseData,
+  HttpClient,
+  isTimeoutError
+} from "../../utils/httpClient";
 import { logger, sanitizeForLog } from "../../utils/logger";
 import { generateLinkResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanAuthService, toyotaPlanAuthService } from "./toyotaPlanAuth.service";
@@ -16,8 +21,6 @@ import {
   ToyotaPlanCatalogService,
   toyotaPlanCatalogService
 } from "./toyotaPlanCatalog.service";
-
-const HTTP_TIMEOUT_MS = 15000;
 
 export class ToyotaPlanService {
   constructor(
@@ -122,7 +125,7 @@ export class ToyotaPlanService {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`
         },
-        timeout: HTTP_TIMEOUT_MS
+        timeout: this.config.generateLinkTimeoutMs
       });
 
       return generateLinkResponseSchema.parse(response);
@@ -133,6 +136,12 @@ export class ToyotaPlanService {
         logger.warn("Toyota Plan token expired, refreshing once");
         const refreshedToken = await this.authService.refreshAccessToken();
         return this.callGenerateLink(payload, refreshedToken, true);
+      }
+
+      if (isTimeoutError(error)) {
+        logger.warn("Toyota Plan generate link timeout without automatic retry", {
+          reason: "non_idempotent_operation"
+        });
       }
 
       logger.error("Toyota Plan generate link error", {

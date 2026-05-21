@@ -33,6 +33,55 @@ Se agregaron pruebas automatizadas para:
 
 ---
 
+## v0.4.2 - Correlation ID y trazabilidad
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se agrega correlation ID por request para trazabilidad completa del backend.
+
+Cada request ahora puede:
+
+- aceptar `x-correlation-id` entrante;
+- generar uno nuevo si no existe;
+- devolver `x-correlation-id` en la respuesta;
+- propagarlo automáticamente a todos los logs del request.
+
+### Confirmaciones
+
+- la mejora no cambia endpoints funcionales;
+- la mejora no cambia body de requests;
+- la mejora no cambia seller, catálogo ni ambiente;
+- la sanitización de secretos y tokens se mantiene;
+- requests concurrentes conservan correlation IDs separados.
+
+---
+
+## v0.4.3 - Politica conservadora de retries
+
+### Fecha
+
+2026-05-21
+
+### Resultado
+
+Se agrega una politica de resiliencia HTTP conservadora para reducir el riesgo de duplicar links externos.
+
+### Confirmaciones
+
+- OAuth usa timeout configurable independiente.
+- `generateLink` usa timeout configurable independiente.
+- OAuth puede reintentar una vez ante errores transitorios o `502/503/504`.
+- OAuth no reintenta errores `4xx` funcionales como `invalid_client`.
+- `generateLink` no reintenta timeouts automaticamente.
+- `generateLink` mantiene solo el retry actual por token expirado.
+- No se documentan ni exponen tokens, secretos ni headers de autorizacion.
+
+---
+
 ## v0.4 - Validacion sandbox inicial exitosa
 
 ### Fecha/hora

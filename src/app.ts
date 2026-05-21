@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { corsConfig } from "./config/corsConfig";
 import { env } from "./config/env";
 import { toyotaPlanConfig } from "./config/toyotaPlanConfig";
+import { correlationIdMiddleware } from "./middlewares/correlationId";
 import { errorHandler } from "./middlewares/errorHandler";
 import { requestLogger } from "./middlewares/requestLogger";
 import { toyotaPlanRouter } from "./modules/toyotaPlan/toyotaPlan.routes";
@@ -14,6 +15,7 @@ export const createApp = () => {
   app.set("trust proxy", env.TRUST_PROXY);
   app.use(helmet());
   app.use(cors(corsConfig));
+  app.use(correlationIdMiddleware);
   app.use(express.json({ limit: "32kb" }));
   app.use(requestLogger);
 

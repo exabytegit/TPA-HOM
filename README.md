@@ -24,6 +24,7 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 - v0.3.1: hardening previo a credenciales sandbox.
 - v0.4: validacion sandbox inicial exitosa.
 - v0.4.1: deduplicacion de refresh OAuth para requests concurrentes.
+- v0.4.2: correlation ID por request para trazabilidad end-to-end.
 
 La primera prueba sandbox exitosa se realizo con el slug:
 
@@ -87,6 +88,8 @@ TOYOTA_PLAN_CLIENT_ID=
 TOYOTA_PLAN_CLIENT_SECRET=
 TOYOTA_PLAN_SCOPE=ext-link/write
 TOYOTA_PLAN_SELLER=HOM
+TOYOTA_PLAN_OAUTH_TIMEOUT_MS=15000
+TOYOTA_PLAN_GENERATE_LINK_TIMEOUT_MS=15000
 
 TOYOTA_PLAN_TOKEN_URL_SANDBOX=https://auth.sdx.suscripcion.toyotaplan.com.ar/oauth2/token
 TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX=https://sdx.suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink
@@ -442,6 +445,29 @@ tests/
 - El retry unico por token expirado en `ToyotaPlanService` se mantiene.
 - No se loguean tokens, secretos ni headers de autorizacion.
 - Tests cubren llamadas concurrentes y limpieza de promesa tras fallo de refresh.
+
+## Mejoras v0.4.2 - Correlation ID y trazabilidad
+
+- Se agrega middleware de correlation ID por request.
+- Si entra `x-correlation-id`, se respeta; si no, se genera con `randomUUID()`.
+- La respuesta siempre devuelve `x-correlation-id`.
+- El correlation ID se propaga con `AsyncLocalStorage`, sin pasarlo manualmente por services.
+- El logger agrega `correlationId` automaticamente a cada log.
+- La sanitizacion recursiva de secrets y tokens se mantiene intacta.
+- Tests cubren generacion, propagacion, aislamiento entre requests concurrentes y respuesta con header.
+
+## Mejoras v0.4.3 - Politica conservadora de retries
+
+- Se separan timeouts para OAuth y `generateLink`.
+- Variables nuevas:
+  `TOYOTA_PLAN_OAUTH_TIMEOUT_MS`
+  `TOYOTA_PLAN_GENERATE_LINK_TIMEOUT_MS`
+- OAuth permite hasta 2 intentos en total, con backoff corto.
+- OAuth solo reintenta errores transitorios de red o `502/503/504`.
+- OAuth no reintenta `invalid_client`, `invalid_request` ni otros `4xx`.
+- `generateLink` no reintenta timeouts ni errores transitorios por defecto, porque es una operacion `POST` no idempotente.
+- `generateLink` mantiene solo el retry actual cuando Toyota responde token expirado.
+- Mientras Toyota no confirme idempotency key o garantia equivalente, no conviene activar retry automatico sobre `generateLink`.
 
 ## Roadmap base de datos
 

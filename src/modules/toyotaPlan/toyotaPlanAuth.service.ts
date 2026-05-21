@@ -1,12 +1,19 @@
 import { toyotaPlanConfig } from "../../config/toyotaPlanConfig";
 import { AppError } from "../../utils/appError";
-import { getErrorResponseData, HttpClient, axiosHttpClient } from "../../utils/httpClient";
+import {
+  getErrorResponseData,
+  getErrorStatusCode,
+  HttpClient,
+  axiosHttpClient,
+  isTransientNetworkError
+} from "../../utils/httpClient";
 import { logger, sanitizeForLog } from "../../utils/logger";
 import { tokenResponseSchema } from "./toyotaPlan.schemas";
 import { ToyotaPlanRuntimeConfig, ToyotaPlanTokenResponse } from "./toyotaPlan.types";
 
 const TOKEN_REFRESH_WINDOW_MS = 5 * 60 * 1000;
-const HTTP_TIMEOUT_MS = 15000;
+const OAUTH_MAX_ATTEMPTS = 2;
+const OAUTH_RETRY_BACKOFF_MS = 200;
 
 interface CachedToken {
   accessToken: string;
@@ -50,43 +57,69 @@ export class ToyotaPlanAuthService {
       scope: this.config.scope
     });
 
-    try {
-      logger.info("Requesting Toyota Plan OAuth token", {
-        toyotaPlanEnvironment: this.config.environment
-      });
+    for (let attempt = 1; attempt <= OAUTH_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        logger.info("Requesting Toyota Plan OAuth token", {
+          toyotaPlanEnvironment: this.config.environment,
+          oauthAttempt: attempt
+        });
 
-      const response = await this.httpClient.post<ToyotaPlanTokenResponse, URLSearchParams>(
-        this.config.tokenUrl,
-        body,
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          timeout: HTTP_TIMEOUT_MS
+        const response = await this.httpClient.post<ToyotaPlanTokenResponse, URLSearchParams>(
+          this.config.tokenUrl,
+          body,
+          {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            timeout: this.config.oauthTimeoutMs
+          }
+        );
+
+        const tokenResponse = tokenResponseSchema.parse(response);
+        this.cachedToken = {
+          accessToken: tokenResponse.access_token,
+          expiresAtMs: Date.now() + tokenResponse.expires_in * 1000 - TOKEN_REFRESH_WINDOW_MS
+        };
+
+        logger.info("Toyota Plan OAuth token cached", {
+          expiresInSeconds: tokenResponse.expires_in,
+          tokenType: tokenResponse.token_type
+        });
+
+        return tokenResponse.access_token;
+      } catch (error) {
+        const responseData = getErrorResponseData(error);
+        const statusCode = getErrorStatusCode(error);
+        const isRetryable = isTransientNetworkError(error) && attempt < OAUTH_MAX_ATTEMPTS;
+
+        logger.error("Toyota Plan OAuth error", {
+          oauthAttempt: attempt,
+          statusCode,
+          response: sanitizeForLog(responseData),
+          message: error instanceof Error ? error.message : "Unknown error"
+        });
+
+        if (isRetryable) {
+          logger.warn("Transient Toyota Plan OAuth error, retrying", {
+            oauthAttempt: attempt,
+            statusCode
+          });
+          await this.sleep(OAUTH_RETRY_BACKOFF_MS * attempt);
+          continue;
         }
-      );
 
-      const tokenResponse = tokenResponseSchema.parse(response);
-      this.cachedToken = {
-        accessToken: tokenResponse.access_token,
-        expiresAtMs: Date.now() + tokenResponse.expires_in * 1000 - TOKEN_REFRESH_WINDOW_MS
-      };
+        if (attempt === OAUTH_MAX_ATTEMPTS && isTransientNetworkError(error)) {
+          logger.error("Toyota Plan OAuth retry exhausted", {
+            oauthAttempt: attempt,
+            statusCode
+          });
+        }
 
-      logger.info("Toyota Plan OAuth token cached", {
-        expiresInSeconds: tokenResponse.expires_in,
-        tokenType: tokenResponse.token_type
-      });
-
-      return tokenResponse.access_token;
-    } catch (error) {
-      const responseData = getErrorResponseData(error);
-      logger.error("Toyota Plan OAuth error", {
-        response: sanitizeForLog(responseData),
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-
-      throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_AUTH_ERROR");
+        throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_AUTH_ERROR");
+      }
     }
+
+    throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_AUTH_ERROR");
   }
 
   private assertCredentials(): void {
@@ -97,6 +130,10 @@ export class ToyotaPlanAuthService {
         "TOYOTA_PLAN_CREDENTIALS_MISSING"
       );
     }
+  }
+
+  private sleep(delayMs: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 }
 

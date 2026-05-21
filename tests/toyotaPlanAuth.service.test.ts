@@ -9,6 +9,8 @@ const config: ToyotaPlanRuntimeConfig = {
   scope: "ext-link/write",
   clientId: "client-id",
   clientSecret: "client-secret",
+  oauthTimeoutMs: 15000,
+  generateLinkTimeoutMs: 15000,
   tokenUrl: "https://auth.example.com/oauth2/token",
   generateLinkUrl: "https://api.example.com/generatelink",
   expectedLinkHost: "sdx.suscripcion.toyotaplan.com.ar"
@@ -26,6 +28,51 @@ const createDeferred = <T>() => {
 };
 
 describe("ToyotaPlanAuthService", () => {
+  it("retries OAuth once on transient 503 and then succeeds", async () => {
+    const httpClient: HttpClient = {
+      post: vi
+        .fn()
+        .mockRejectedValueOnce(
+          Object.assign(new Error("Service unavailable"), {
+            response: {
+              status: 503,
+              data: {
+                message: "Service unavailable"
+              }
+            }
+          })
+        )
+        .mockResolvedValueOnce({
+          access_token: "recovered-token",
+          expires_in: 3600,
+          token_type: "Bearer"
+        })
+    };
+    const service = new ToyotaPlanAuthService(config, httpClient);
+
+    await expect(service.getAccessToken()).resolves.toBe("recovered-token");
+    expect(httpClient.post).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry OAuth on invalid_client", async () => {
+    const httpClient: HttpClient = {
+      post: vi.fn().mockRejectedValueOnce(
+        Object.assign(new Error("invalid_client"), {
+          response: {
+            status: 400,
+            data: {
+              error: "invalid_client"
+            }
+          }
+        })
+      )
+    };
+    const service = new ToyotaPlanAuthService(config, httpClient);
+
+    await expect(service.getAccessToken()).rejects.toThrow("Toyota Plan integration error");
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+  });
+
   it("deduplicates concurrent token refreshes", async () => {
     const deferred = createDeferred<{
       access_token: string;

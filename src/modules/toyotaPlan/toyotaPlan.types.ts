@@ -50,4 +50,6 @@ export interface ToyotaPlanRuntimeConfig {
   tokenUrl: string;
   generateLinkUrl: string;
   expectedLinkHost: string;
+  oauthTimeoutMs: number;
+  generateLinkTimeoutMs: number;
 }

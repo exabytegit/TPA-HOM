@@ -11,6 +11,8 @@ const config: ToyotaPlanRuntimeConfig = {
   scope: "ext-link/write",
   clientId: "client-id",
   clientSecret: "client-secret",
+  oauthTimeoutMs: 15000,
+  generateLinkTimeoutMs: 15000,
   tokenUrl: "https://auth.example.com/oauth2/token",
   generateLinkUrl: "https://api.example.com/generatelink",
   expectedLinkHost: "sdx.suscripcion.toyotaplan.com.ar"
@@ -47,6 +49,10 @@ const tokenExpiredError = Object.assign(new Error("expired"), {
       message: "The incoming token has expired"
     }
   }
+});
+
+const timeoutError = Object.assign(new Error("timeout"), {
+  code: "ECONNABORTED"
 });
 
 describe("ToyotaPlanService", () => {
@@ -157,5 +163,26 @@ describe("ToyotaPlanService", () => {
     await expect(service.generateSubscriptionLink(catalogItem.slug)).rejects.toThrow(
       "Toyota Plan integration error"
     );
+  });
+
+  it("does not retry generateLink automatically on timeout", async () => {
+    const authHttpClient = createMockHttpClient({
+      access_token: "token-1",
+      expires_in: 3600,
+      token_type: "Bearer"
+    });
+    const generateHttpClient = createMockHttpClient(timeoutError);
+
+    const service = new ToyotaPlanService(
+      new ToyotaPlanCatalogService([catalogItem]),
+      new ToyotaPlanAuthService(config, authHttpClient),
+      generateHttpClient,
+      config
+    );
+
+    await expect(service.generateSubscriptionLink(catalogItem.slug)).rejects.toThrow(
+      "Toyota Plan integration error"
+    );
+    expect(generateHttpClient.post).toHaveBeenCalledTimes(1);
   });
 });

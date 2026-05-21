@@ -1,3 +1,5 @@
+import { getCorrelationId } from "../middlewares/correlationId";
+
 type LogMeta = Record<string, unknown>;
 
 const REDACTED = "[REDACTED]";
@@ -84,11 +86,21 @@ export const sanitizeForLog = (
 
 const write = (level: "info" | "warn" | "error", message: string, meta?: LogMeta): void => {
   const sanitizedMeta = sanitizeForLog(meta);
+  const correlationId = getCorrelationId();
+  const mergedMeta =
+    sanitizedMeta && typeof sanitizedMeta === "object" && !Array.isArray(sanitizedMeta)
+      ? {
+          ...(sanitizedMeta as Record<string, unknown>),
+          ...(correlationId ? { correlationId } : {})
+        }
+      : correlationId
+        ? { correlationId }
+        : undefined;
   const entry = {
     level,
     message,
     timestamp: new Date().toISOString(),
-    ...(sanitizedMeta ? { meta: sanitizedMeta } : {})
+    ...(mergedMeta ? { meta: mergedMeta } : {})
   };
 
   const line = JSON.stringify(entry);
