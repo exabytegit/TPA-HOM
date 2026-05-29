@@ -45,12 +45,15 @@ Uso:
 - muestra `status`, `linkHost`, `correlationId` y mensaje resumido;
 - permite abrir el link sandbox en otra pestaña sin dejar el link completo visible en pantalla.
 
+- usa JavaScript externo (`/test-modelos.js`) para respetar CSP/Helmet sin relajar seguridad.
+
 Importante:
 
 - es solo para testing local en `development/sandbox`;
 - `GET /api/dev/catalog` tambien existe solo en `development`;
 - no debe exponerse en produccion;
 - no imprime tokens, credenciales ni headers `Authorization`.
+- en sandbox la UI distingue rechazo funcional de catalogo TPA vs error transitorio Toyota.
 
 ## Dev-only testing tools
 
@@ -72,6 +75,10 @@ Alcance:
   - `modelId`
   - `planId`
 - no expone tokens, `client_secret`, headers `Authorization` ni links completos.
+- la UI local clasifica errores de sandbox en:
+  - `Error catálogo TPA`
+  - `Error Toyota transitorio`
+  - `Error backend/red`
 
 Regla de despliegue:
 

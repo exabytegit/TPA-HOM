@@ -1,12 +1,21 @@
 import cors from "cors";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
+import { env } from "../src/config/env";
 import { createCorsConfig } from "../src/config/corsConfig";
+import { correlationIdMiddleware } from "../src/middlewares/correlationId";
 import { errorHandler } from "../src/middlewares/errorHandler";
+import { AppError } from "../src/utils/appError";
 
 describe("app security middleware", () => {
+  const originalNodeEnv = env.NODE_ENV;
+
+  afterEach(() => {
+    env.NODE_ENV = originalNodeEnv;
+  });
+
   it("returns healthcheck data without external calls", async () => {
     const response = await request(createApp())
       .get("/health")
@@ -38,8 +47,9 @@ describe("app security middleware", () => {
       .set("Origin", "https://not-authorized.example.com")
       .expect(403);
 
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       success: false,
+      code: "CORS_ORIGIN_NOT_ALLOWED",
       message: "Not allowed by CORS"
     });
   });
@@ -111,11 +121,27 @@ describe("app security middleware", () => {
     const response = await request(createApp({ serveStatic: true })).get("/test-modelos.html").expect(200);
 
     expect(response.text).toContain("TPA-HOM - Test interno de modelos");
-    expect(response.text).toContain('fetch("/api/dev/catalog"');
+    expect(response.text).toContain('<script src="/test-modelos.js" defer></script>');
+    expect(response.text).not.toContain("<script>");
+    expect(response.text).not.toContain("onclick=");
+    expect(response.text).not.toContain("onload=");
+    expect(response.text).not.toContain("onchange=");
   });
 
   it("does not serve test-modelos.html when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/test-modelos.html").expect(404);
+  });
+
+  it("serves test-modelos.js when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/test-modelos.js").expect(200);
+
+    expect(response.text).toContain('fetch("/api/dev/catalog"');
+    expect(response.text).toContain('addEventListener("click", runAllSequentially)');
+    expect(response.headers["content-type"]).toContain("javascript");
+  });
+
+  it("does not serve test-modelos.js when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/test-modelos.js").expect(404);
   });
 
   it("serves development catalog when enabled", async () => {
@@ -146,5 +172,69 @@ describe("app security middleware", () => {
       .get("/api/dev/catalog")
       .set("Origin", "http://localhost:5173")
       .expect(404);
+  });
+
+  it("returns sanitized dev error details for operational Toyota errors", async () => {
+    env.NODE_ENV = "development";
+    const app = express();
+    app.use(correlationIdMiddleware);
+    app.get("/boom", (_req, _res, next) => {
+      next(
+        new AppError(422, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_REJECTED", true, {
+          slug: "slug-demo",
+          upstreamStatusCode: 200,
+          upstreamMessage:
+            "El valor de cuota 1 declarado para el modelo y plan no puede ser superior al valor de lista de TPA"
+        })
+      );
+    });
+    app.use(errorHandler);
+
+    const response = await request(app)
+      .get("/boom")
+      .set("x-correlation-id", "corr-dev-error")
+      .expect(422);
+
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "Toyota Plan integration error",
+      code: "TOYOTA_PLAN_LINK_REJECTED",
+      correlationId: "corr-dev-error",
+      details: {
+        slug: "slug-demo",
+        upstreamStatusCode: 200,
+        upstreamMessage:
+          "El valor de cuota 1 declarado para el modelo y plan no puede ser superior al valor de lista de TPA"
+      }
+    });
+  });
+
+  it("does not expose upstreamMessage details in production error responses", async () => {
+    env.NODE_ENV = "production";
+    const app = express();
+    app.use(correlationIdMiddleware);
+    app.get("/boom", (_req, _res, next) => {
+      next(
+        new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_UPSTREAM_ERROR", true, {
+          slug: "slug-demo",
+          upstreamStatusCode: 502,
+          upstreamMessage: "Internal server error"
+        })
+      );
+    });
+    app.use(errorHandler);
+
+    const response = await request(app)
+      .get("/boom")
+      .set("x-correlation-id", "corr-prod-error")
+      .expect(502);
+
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "Toyota Plan integration error",
+      code: "TOYOTA_PLAN_UPSTREAM_ERROR",
+      correlationId: "corr-prod-error"
+    });
+    expect(response.body).not.toHaveProperty("details");
   });
 });

@@ -64,13 +64,18 @@ export class ToyotaPlanService {
       const toyotaResponse = await this.callGenerateLink(payload, token, false);
 
       if (!toyotaResponse.success || !toyotaResponse.link) {
+        const upstreamMessage = this.extractUpstreamMessage(toyotaResponse);
         logger.error("Toyota Plan returned unsuccessful response", {
           slug,
           response: toyotaResponse,
+          upstreamMessage,
           ip: metadata.ip,
           userAgent: metadata.userAgent
         });
-        throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_FAILED");
+        throw new AppError(422, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_REJECTED", true, {
+          slug,
+          upstreamMessage
+        });
       }
 
       this.validateReturnedLinkHost(toyotaResponse.link);
@@ -145,6 +150,7 @@ export class ToyotaPlanService {
     } catch (error) {
       const responseData = getErrorResponseData(error);
       const statusCode = getErrorStatusCode(error);
+      const upstreamMessage = this.extractUpstreamMessage(responseData);
 
       if (!alreadyRetried && this.isTokenExpiredResponse(responseData)) {
         logger.warn("toyota_plan.link_generation.failed", {
@@ -159,11 +165,51 @@ export class ToyotaPlanService {
 
       if (isTimeoutError(error)) {
         logger.warn("toyota_plan.link_generation.failed", {
+          modelId: payload.modelId,
+          planId: payload.planId,
           seller: this.config.seller,
           durationMs: 0,
-          errorCode: "TOYOTA_PLAN_LINK_ERROR",
+          errorCode: "TOYOTA_PLAN_GENERATE_LINK_TIMEOUT",
           reason: "non_idempotent_operation"
         });
+
+        throw new AppError(
+          504,
+          "Toyota Plan integration error",
+          "TOYOTA_PLAN_GENERATE_LINK_TIMEOUT",
+          true,
+          {
+            slug: this.findSlugByPayload(payload),
+            upstreamStatusCode: statusCode,
+            upstreamMessage
+          }
+        );
+      }
+
+      if (this.isUpstreamTransientError(statusCode, upstreamMessage)) {
+        logger.error("toyota_plan.link_generation.failed", {
+          modelId: payload.modelId,
+          planId: payload.planId,
+          seller: payload.seller,
+          durationMs: 0,
+          errorCode: "TOYOTA_PLAN_UPSTREAM_ERROR",
+          response: sanitizeForLog(responseData),
+          statusCode,
+          upstreamMessage,
+          message: error instanceof Error ? error.message : "Unknown error"
+        });
+
+        throw new AppError(
+          statusCode === 503 || statusCode === 504 ? statusCode : 502,
+          "Toyota Plan integration error",
+          "TOYOTA_PLAN_UPSTREAM_ERROR",
+          true,
+          {
+            slug: this.findSlugByPayload(payload),
+            upstreamStatusCode: statusCode,
+            upstreamMessage
+          }
+        );
       }
 
       logger.error("toyota_plan.link_generation.failed", {
@@ -171,13 +217,18 @@ export class ToyotaPlanService {
         planId: payload.planId,
         seller: payload.seller,
         durationMs: 0,
-        errorCode: "TOYOTA_PLAN_LINK_ERROR",
+        errorCode: "TOYOTA_PLAN_LINK_REJECTED",
         response: sanitizeForLog(responseData),
         statusCode,
+        upstreamMessage,
         message: error instanceof Error ? error.message : "Unknown error"
       });
 
-      throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_ERROR");
+      throw new AppError(422, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_REJECTED", true, {
+        slug: this.findSlugByPayload(payload),
+        upstreamStatusCode: statusCode,
+        upstreamMessage
+      });
     }
   }
 
@@ -212,6 +263,37 @@ export class ToyotaPlanService {
       });
       throw new AppError(502, "Toyota Plan integration error", "TOYOTA_PLAN_LINK_URL_INVALID");
     }
+  }
+
+  private extractUpstreamMessage(responseData: unknown): string | undefined {
+    if (!responseData || typeof responseData !== "object" || !("message" in responseData)) {
+      return undefined;
+    }
+
+    return typeof responseData.message === "string" ? responseData.message : undefined;
+  }
+
+  private isUpstreamTransientError(
+    statusCode: number | undefined,
+    upstreamMessage: string | undefined
+  ): boolean {
+    if (statusCode === 502 || statusCode === 503 || statusCode === 504) {
+      return true;
+    }
+
+    return upstreamMessage?.toLowerCase() === "internal server error";
+  }
+
+  private findSlugByPayload(payload: ToyotaPlanGenerateLinkRequest): string | undefined {
+    return this.catalogService
+      .getCatalog()
+      .find(
+        (item) =>
+          item.modelId === payload.modelId &&
+          item.planId === payload.planId &&
+          item.amount === payload.amount &&
+          item.seller === payload.seller
+      )?.slug;
   }
 }
 

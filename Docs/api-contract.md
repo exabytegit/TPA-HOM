@@ -212,6 +212,68 @@ o
 }
 ```
 
+#### 422 Toyota Plan functional rejection
+
+```json
+{
+  "success": false,
+  "message": "Toyota Plan integration error",
+  "code": "TOYOTA_PLAN_LINK_REJECTED",
+  "correlationId": "frontend-generate-001"
+}
+```
+
+#### 502/503 Toyota Plan upstream error
+
+```json
+{
+  "success": false,
+  "message": "Toyota Plan integration error",
+  "code": "TOYOTA_PLAN_UPSTREAM_ERROR",
+  "correlationId": "frontend-generate-001"
+}
+```
+
+#### 504 Toyota Plan generateLink timeout
+
+```json
+{
+  "success": false,
+  "message": "Toyota Plan integration error",
+  "code": "TOYOTA_PLAN_GENERATE_LINK_TIMEOUT",
+  "correlationId": "frontend-generate-001"
+}
+```
+
+### Detalle dev-only de errores
+
+Cuando `NODE_ENV !== "production"`, las respuestas operativas pueden incluir detalles
+sanitizados adicionales para diagnostico sandbox:
+
+- `code`
+- `correlationId`
+- `details.upstreamStatusCode`
+- `details.upstreamMessage`
+- `details.slug`
+
+Ejemplo:
+
+```json
+{
+  "success": false,
+  "message": "Toyota Plan integration error",
+  "code": "TOYOTA_PLAN_LINK_REJECTED",
+  "correlationId": "frontend-generate-001",
+  "details": {
+    "slug": "hilux-4x4-dc-dx-24-tdi-at-plan-100",
+    "upstreamMessage": "El valor de cuota 1 declarado para el modelo y plan no puede ser superior al valor de lista de TPA"
+  }
+}
+```
+
+En `production`, la respuesta mantiene formato seguro y no expone `upstreamMessage`
+detallado.
+
 ### Headers relevantes
 
 Request:

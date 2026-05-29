@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { AppError } from "../src/utils/appError";
 import { HttpClient } from "../src/utils/httpClient";
 import { ToyotaPlanAuthService } from "../src/modules/toyotaPlan/toyotaPlanAuth.service";
 import { ToyotaPlanCatalogService } from "../src/modules/toyotaPlan/toyotaPlanCatalog.service";
@@ -222,6 +223,112 @@ describe("ToyotaPlanService", () => {
     await expect(service.generateSubscriptionLink(catalogItem.slug)).rejects.toThrow(
       "Toyota Plan integration error"
     );
+    expect(generateHttpClient.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps Toyota functional rejection to TOYOTA_PLAN_LINK_REJECTED", async () => {
+    const authHttpClient = createMockHttpClient({
+      access_token: "token-1",
+      expires_in: 3600,
+      token_type: "Bearer"
+    });
+    const generateHttpClient = createMockHttpClient({
+      success: false,
+      message: "El valor de cuota 1 declarado para el modelo y plan no puede ser superior al valor de lista de TPA"
+    });
+
+    const service = new ToyotaPlanService(
+      new ToyotaPlanCatalogService([catalogItem]),
+      new ToyotaPlanAuthService(config, authHttpClient),
+      generateHttpClient,
+      config
+    );
+
+    try {
+      await service.generateSubscriptionLink(catalogItem.slug);
+      throw new Error("Expected service to reject");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppError);
+      expect(error).toMatchObject({
+        statusCode: 422,
+        code: "TOYOTA_PLAN_LINK_REJECTED",
+        details: {
+          slug: catalogItem.slug,
+          upstreamMessage:
+            "El valor de cuota 1 declarado para el modelo y plan no puede ser superior al valor de lista de TPA"
+        }
+      });
+    }
+  });
+
+  it("maps upstream 502 to TOYOTA_PLAN_UPSTREAM_ERROR", async () => {
+    const authHttpClient = createMockHttpClient({
+      access_token: "token-1",
+      expires_in: 3600,
+      token_type: "Bearer"
+    });
+    const upstream502 = Object.assign(new Error("upstream"), {
+      response: {
+        status: 502,
+        data: {
+          message: "Internal server error"
+        }
+      }
+    });
+    const generateHttpClient = createMockHttpClient(upstream502);
+
+    const service = new ToyotaPlanService(
+      new ToyotaPlanCatalogService([catalogItem]),
+      new ToyotaPlanAuthService(config, authHttpClient),
+      generateHttpClient,
+      config
+    );
+
+    try {
+      await service.generateSubscriptionLink(catalogItem.slug);
+      throw new Error("Expected service to reject");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppError);
+      expect(error).toMatchObject({
+        statusCode: 502,
+        code: "TOYOTA_PLAN_UPSTREAM_ERROR",
+        details: {
+          slug: catalogItem.slug,
+          upstreamStatusCode: 502,
+          upstreamMessage: "Internal server error"
+        }
+      });
+    }
+  });
+
+  it("maps generateLink timeout to TOYOTA_PLAN_GENERATE_LINK_TIMEOUT", async () => {
+    const authHttpClient = createMockHttpClient({
+      access_token: "token-1",
+      expires_in: 3600,
+      token_type: "Bearer"
+    });
+    const generateHttpClient = createMockHttpClient(timeoutError);
+
+    const service = new ToyotaPlanService(
+      new ToyotaPlanCatalogService([catalogItem]),
+      new ToyotaPlanAuthService(config, authHttpClient),
+      generateHttpClient,
+      config
+    );
+
+    try {
+      await service.generateSubscriptionLink(catalogItem.slug);
+      throw new Error("Expected service to reject");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppError);
+      expect(error).toMatchObject({
+        statusCode: 504,
+        code: "TOYOTA_PLAN_GENERATE_LINK_TIMEOUT",
+        details: {
+          slug: catalogItem.slug
+        }
+      });
+    }
     expect(generateHttpClient.post).toHaveBeenCalledTimes(1);
   });
 });

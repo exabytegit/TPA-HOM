@@ -1,5 +1,38 @@
 # Sandbox Test Log
 
+## v0.5.3 - Clasificacion dev de errores Toyota Plan
+
+### Fecha
+
+2026-05-28
+
+### Resultado
+
+Se mejoro el diagnostico en development/sandbox para distinguir mejor entre:
+
+- rechazo funcional de catalogo/TPA;
+- error transitorio o indisponibilidad de Toyota sandbox;
+- error local de backend o red.
+
+### Confirmaciones
+
+- `POST /api/toyota-plan/generate-link` ahora clasifica rechazos funcionales como
+  `TOYOTA_PLAN_LINK_REJECTED` con `HTTP 422`;
+- errores upstream `502/503/504` o `Internal server error` se clasifican como
+  `TOYOTA_PLAN_UPSTREAM_ERROR`;
+- timeouts de `generateLink` se clasifican como
+  `TOYOTA_PLAN_GENERATE_LINK_TIMEOUT`;
+- en development se pueden devolver detalles sanitizados para diagnostico
+  (`code`, `correlationId`, `details.upstreamStatusCode`, `details.upstreamMessage`,
+  `details.slug`);
+- en production la respuesta sigue siendo segura y no expone `upstreamMessage`
+  detallado;
+- la UI `test-modelos.html` ahora distingue visualmente `Error catalogo TPA`,
+  `Error Toyota transitorio` y `Error backend/red`;
+- no se exponen tokens, `Authorization`, `client_secret` ni links completos.
+
+---
+
 ## v0.5.2 - Dev-only testing tools
 
 ### Fecha
