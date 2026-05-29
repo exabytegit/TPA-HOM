@@ -10,9 +10,10 @@ import { requestLogger } from "./middlewares/requestLogger";
 import { toyotaPlanRouter } from "./modules/toyotaPlan/toyotaPlan.routes";
 import { renderMetrics } from "./utils/metrics";
 
-export const createApp = (options?: { enableMetrics?: boolean }) => {
+export const createApp = (options?: { enableMetrics?: boolean; serveStatic?: boolean }) => {
   const app = express();
   const enableMetrics = options?.enableMetrics ?? env.ENABLE_METRICS;
+  const shouldServeStatic = options?.serveStatic ?? env.NODE_ENV !== "production";
 
   app.set("trust proxy", env.TRUST_PROXY);
   app.use(helmet());
@@ -20,6 +21,10 @@ export const createApp = (options?: { enableMetrics?: boolean }) => {
   app.use(correlationIdMiddleware);
   app.use(express.json({ limit: "32kb" }));
   app.use(requestLogger);
+
+  if (shouldServeStatic) {
+    app.use(express.static("public"));
+  }
 
   app.get("/health", (_req, res) => {
     res.json({

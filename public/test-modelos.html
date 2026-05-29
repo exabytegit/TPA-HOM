@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TPA-HOM Test Modelos</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f5f7fb;
+        color: #18212f;
+      }
+
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+      }
+
+      p {
+        margin: 0 0 12px;
+        color: #45556c;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin: 20px 0;
+      }
+
+      button {
+        border: 1px solid #0f172a;
+        background: #0f172a;
+        color: #fff;
+        border-radius: 6px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button.secondary {
+        background: #fff;
+        color: #0f172a;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .summary-item {
+        background: #fff;
+        border: 1px solid #d5deeb;
+        border-radius: 6px;
+        padding: 10px 12px;
+        min-width: 120px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        background: #fff;
+        border: 1px solid #d5deeb;
+        border-radius: 8px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1200px;
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e4ebf5;
+        vertical-align: top;
+        text-align: left;
+        font-size: 14px;
+      }
+
+      th {
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      code {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 12px;
+        word-break: break-word;
+      }
+
+      .status-pill {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .status-idle { background: #e5e7eb; color: #334155; }
+      .status-running { background: #dbeafe; color: #1d4ed8; }
+      .status-ok { background: #dcfce7; color: #166534; }
+      .status-error { background: #fee2e2; color: #b91c1c; }
+
+      .message {
+        max-width: 360px;
+        color: #5b6676;
+      }
+
+      .meta {
+        color: #607086;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TPA-HOM - Test interno de modelos</h1>
+      <p>
+        Uso exclusivo de development/sandbox. Esta pagina envia solo <code>slug</code> al backend local
+        y muestra resultado resumido sin exponer tokens, credenciales ni links completos.
+      </p>
+
+      <div class="toolbar">
+        <button id="test-all-button">Probar todos</button>
+        <button id="reset-button" class="secondary">Limpiar resultados</button>
+        <span class="meta">Delay secuencial: 500ms</span>
+      </div>
+
+      <div class="summary">
+        <div class="summary-item"><strong>Total</strong><div id="summary-total">0</div></div>
+        <div class="summary-item"><strong>Exitos</strong><div id="summary-success">0</div></div>
+        <div class="summary-item"><strong>Fallidos</strong><div id="summary-failed">0</div></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Slug</th>
+              <th>Modelo</th>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>Accion</th>
+              <th>Estado</th>
+              <th>linkHost</th>
+              <th>correlationId</th>
+              <th>Mensaje / error</th>
+            </tr>
+          </thead>
+          <tbody id="catalog-body"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <script>
+      const catalog = [
+        {
+          slug: "hilux-4x4-dc-dx-24-tdi-at-plan-100",
+          modelDescription: "HILUX 4X4 D/C DX 2.4 TDI 6 A/T",
+          planDescription: "PLAN 100% DIF G 84M",
+          amount: 558824.14
+        },
+        {
+          slug: "yaris-cross-xli-15-cvt-flex-70-30",
+          modelDescription: "YARIS CROSS XLI 1.5 CVT FLEX",
+          planDescription: "70/30 84 M DIF H",
+          amount: 465393.18
+        },
+        {
+          slug: "corolla-cross-xli-20-cvt-70-30",
+          modelDescription: "COROLLA CROSS XLI 2.0 CVT",
+          planDescription: "70/30 84 M DIF H",
+          amount: 582729.05
+        },
+        {
+          slug: "hiace-furgon-l2h2-28-tdi-at-plan-100",
+          modelDescription: "HIACE FURGON L2H2 2.8 TDI 6AT 3A 5P",
+          planDescription: "PLAN 100% DIF G 84M",
+          amount: 639161.64
+        },
+        {
+          slug: "hilux-4x2-dc-dx-24-tdi-mt-70-30",
+          modelDescription: "HILUX 4X2 D/C DX 2.4 TDI 6 M/T",
+          planDescription: "70/30 DIF G 84 MESES",
+          amount: 414400.4
+        },
+        {
+          slug: "yaris-cross-xei-hev-15-ecvt-flex-plan-100",
+          modelDescription: "YARIS CROSS XEI HEV 1.5 ECVT FLEX",
+          planDescription: "100% 84 M DIF H",
+          amount: 651441.37
+        },
+        {
+          slug: "yaris-xs-15-cvt-5p-70-30",
+          modelDescription: "YARIS XS 1.5 CVT 5P",
+          planDescription: "70/30 DIF G 84 MESES",
+          amount: 288034.53
+        },
+        {
+          slug: "yaris-xs-cvt-5p-flex-plan-100",
+          modelDescription: "YARIS XS CVT 5P FLEX",
+          planDescription: "PLAN 100% DIF G 84M",
+          amount: 322629.82
+        },
+        {
+          slug: "corolla-20-xli-cvt-70-30",
+          modelDescription: "COROLLA 2.0 XLI CVT",
+          planDescription: "70/30 84 M DIF H",
+          amount: 494777.57
+        }
+      ];
+
+      const state = new Map();
+      const rowElements = new Map();
+      const delayMs = 500;
+
+      const catalogBody = document.getElementById("catalog-body");
+      const testAllButton = document.getElementById("test-all-button");
+      const resetButton = document.getElementById("reset-button");
+      const summaryTotal = document.getElementById("summary-total");
+      const summarySuccess = document.getElementById("summary-success");
+      const summaryFailed = document.getElementById("summary-failed");
+
+      const formatAmount = (value) =>
+        new Intl.NumberFormat("es-AR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(value);
+
+      const createCorrelationId = () =>
+        `test-ui-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+      const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+      const initialRowState = () => ({
+        status: "idle",
+        linkHost: "-",
+        correlationId: "-",
+        message: "-",
+        sandboxLink: null
+      });
+
+      const statusText = {
+        idle: "Pendiente",
+        running: "Probando",
+        ok: "OK",
+        error: "Error"
+      };
+
+      function updateSummary() {
+        let success = 0;
+        let failed = 0;
+
+        catalog.forEach((item) => {
+          const rowState = state.get(item.slug);
+          if (!rowState) return;
+          if (rowState.status === "ok") success += 1;
+          if (rowState.status === "error") failed += 1;
+        });
+
+        summaryTotal.textContent = String(catalog.length);
+        summarySuccess.textContent = String(success);
+        summaryFailed.textContent = String(failed);
+      }
+
+      function renderRowState(slug) {
+        const rowState = state.get(slug);
+        const elements = rowElements.get(slug);
+        if (!rowState || !elements) return;
+
+        elements.status.innerHTML = `<span class="status-pill status-${rowState.status}">${statusText[rowState.status]}</span>`;
+        elements.linkHost.textContent = rowState.linkHost;
+        elements.correlationId.textContent = rowState.correlationId;
+        elements.message.textContent = rowState.message;
+        elements.actions.innerHTML = "";
+
+        const testButton = document.createElement("button");
+        testButton.textContent = "Probar";
+        testButton.disabled = rowState.status === "running" || testAllButton.disabled;
+        testButton.addEventListener("click", () => runSingleTest(slug));
+        elements.actions.appendChild(testButton);
+
+        if (rowState.sandboxLink) {
+          const openButton = document.createElement("button");
+          openButton.textContent = "Abrir link sandbox";
+          openButton.className = "secondary";
+          openButton.disabled = rowState.status === "running" || testAllButton.disabled;
+          openButton.addEventListener("click", () => {
+            window.open(rowState.sandboxLink, "_blank", "noopener,noreferrer");
+          });
+          elements.actions.appendChild(openButton);
+        }
+
+        updateSummary();
+      }
+
+      function setRowState(slug, partialState) {
+        const currentState = state.get(slug) || initialRowState();
+        state.set(slug, { ...currentState, ...partialState });
+        renderRowState(slug);
+      }
+
+      async function runSingleTest(slug) {
+        const row = catalog.find((item) => item.slug === slug);
+        if (!row) return;
+
+        const correlationId = createCorrelationId();
+        setRowState(slug, {
+          status: "running",
+          linkHost: "-",
+          correlationId,
+          message: "Enviando request...",
+          sandboxLink: null
+        });
+
+        try {
+          const response = await fetch("/api/toyota-plan/generate-link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-correlation-id": correlationId
+            },
+            body: JSON.stringify({ slug })
+          });
+
+          const responseCorrelationId = response.headers.get("x-correlation-id") || correlationId;
+          const body = await response.json().catch(() => ({}));
+
+          if (!response.ok || body.success !== true) {
+            setRowState(slug, {
+              status: "error",
+              correlationId: responseCorrelationId,
+              linkHost: "-",
+              sandboxLink: null,
+              message: `HTTP ${response.status} - ${body.message || "Unknown error"}`
+            });
+            return;
+          }
+
+          const linkHost = new URL(body.link).hostname;
+          setRowState(slug, {
+            status: "ok",
+            correlationId: responseCorrelationId,
+            linkHost,
+            sandboxLink: body.link,
+            message: `success=true | model=${body.model} | plan=${body.plan} | amount=${body.amount}`
+          });
+        } catch (error) {
+          setRowState(slug, {
+            status: "error",
+            linkHost: "-",
+            sandboxLink: null,
+            message: error instanceof Error ? error.message : "Unexpected error"
+          });
+        }
+      }
+
+      async function runAllSequentially() {
+        testAllButton.disabled = true;
+        const actionButtons = Array.from(document.querySelectorAll("tbody button"));
+        actionButtons.forEach((button) => {
+          button.disabled = true;
+        });
+
+        try {
+          for (const item of catalog) {
+            await runSingleTest(item.slug);
+            await sleep(delayMs);
+          }
+        } finally {
+          testAllButton.disabled = false;
+          catalog.forEach((item) => renderRowState(item.slug));
+        }
+      }
+
+      function resetResults() {
+        catalog.forEach((item) => {
+          state.set(item.slug, initialRowState());
+          renderRowState(item.slug);
+        });
+      }
+
+      function buildTable() {
+        catalogBody.innerHTML = "";
+
+        catalog.forEach((item) => {
+          state.set(item.slug, initialRowState());
+
+          const row = document.createElement("tr");
+          const actionsCell = document.createElement("td");
+          const statusCell = document.createElement("td");
+          const linkHostCell = document.createElement("td");
+          const correlationIdCell = document.createElement("td");
+          const messageCell = document.createElement("td");
+
+          const testButton = document.createElement("button");
+          testButton.textContent = "Probar";
+          testButton.addEventListener("click", () => runSingleTest(item.slug));
+          actionsCell.appendChild(testButton);
+
+          row.innerHTML = `
+            <td><code>${item.slug}</code></td>
+            <td>${item.modelDescription}</td>
+            <td>${item.planDescription}</td>
+            <td>${formatAmount(item.amount)}</td>
+          `;
+
+          row.appendChild(actionsCell);
+          row.appendChild(statusCell);
+          row.appendChild(linkHostCell);
+          row.appendChild(correlationIdCell);
+          messageCell.className = "message";
+          row.appendChild(messageCell);
+
+          rowElements.set(item.slug, {
+            actions: actionsCell,
+            status: statusCell,
+            linkHost: linkHostCell,
+            correlationId: correlationIdCell,
+            message: messageCell
+          });
+
+          catalogBody.appendChild(row);
+          renderRowState(item.slug);
+        });
+
+        updateSummary();
+      }
+
+      testAllButton.addEventListener("click", runAllSequentially);
+      resetButton.addEventListener("click", resetResults);
+
+      buildTable();
+    </script>
+  </body>
+</html>

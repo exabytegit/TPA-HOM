@@ -106,4 +106,15 @@ describe("app security middleware", () => {
     expect(response.text).toContain("toyota_plan_link_generation_started_total");
     expect(response.headers["content-type"]).toContain("text/plain");
   });
+
+  it("serves test-modelos.html when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/test-modelos.html").expect(200);
+
+    expect(response.text).toContain("TPA-HOM - Test interno de modelos");
+    expect(response.text).toContain('fetch("/api/toyota-plan/generate-link"');
+  });
+
+  it("does not serve test-modelos.html when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/test-modelos.html").expect(404);
+  });
 });

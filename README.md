@@ -28,6 +28,29 @@ El adapter evita exponer credenciales, tokens, seller, amounts o IDs internos en
 - [Sandbox Test Log](./Docs/sandbox-test-log.md)
 - [Project Manual](./Docs/proyecto_integracion_toyota_plan_suscripcion_digita.md)
 
+## UI de testing local
+
+En `development` se expone una pagina estatica de uso interno para probar manualmente cada
+slug del catalogo actual contra el endpoint local:
+
+```txt
+http://localhost:3000/test-modelos.html
+```
+
+Uso:
+
+- muestra todos los modelos del catalogo;
+- ejecuta `POST /api/toyota-plan/generate-link` enviando solo `slug`;
+- agrega `x-correlation-id` por request desde el navegador;
+- muestra `status`, `linkHost`, `correlationId` y mensaje resumido;
+- permite abrir el link sandbox en otra pestaña sin dejar el link completo visible en pantalla.
+
+Importante:
+
+- es solo para testing local en `development/sandbox`;
+- no debe exponerse en produccion;
+- no imprime tokens, credenciales ni headers `Authorization`.
+
 ## Estado actual
 
 - v0.3.1: hardening previo a credenciales sandbox.
