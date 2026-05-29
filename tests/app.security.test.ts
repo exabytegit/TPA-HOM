@@ -111,10 +111,40 @@ describe("app security middleware", () => {
     const response = await request(createApp({ serveStatic: true })).get("/test-modelos.html").expect(200);
 
     expect(response.text).toContain("TPA-HOM - Test interno de modelos");
-    expect(response.text).toContain('fetch("/api/toyota-plan/generate-link"');
+    expect(response.text).toContain('fetch("/api/dev/catalog"');
   });
 
   it("does not serve test-modelos.html when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/test-modelos.html").expect(404);
+  });
+
+  it("serves development catalog when enabled", async () => {
+    const response = await request(createApp({ serveDevCatalog: true }))
+      .get("/api/dev/catalog")
+      .set("Origin", "http://localhost:5173")
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+    expect(response.body[0]).toMatchObject({
+      slug: expect.any(String),
+      modelDescription: expect.any(String),
+      planDescription: expect.any(String),
+      amount: expect.any(Number),
+      seller: "HOM",
+      enabled: expect.any(Boolean),
+      modelId: expect.any(String),
+      planId: expect.any(String)
+    });
+    expect(response.body[0]).not.toHaveProperty("link");
+    expect(response.body[0]).not.toHaveProperty("clientSecret");
+    expect(response.body[0]).not.toHaveProperty("access_token");
+  });
+
+  it("does not serve development catalog when disabled", async () => {
+    await request(createApp({ serveDevCatalog: false }))
+      .get("/api/dev/catalog")
+      .set("Origin", "http://localhost:5173")
+      .expect(404);
   });
 });
