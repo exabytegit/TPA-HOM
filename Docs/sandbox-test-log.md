@@ -1,5 +1,27 @@
 # Sandbox Test Log
 
+## v0.5.2 - Dev-only testing tools
+
+### Fecha
+
+2026-05-28
+
+### Resultado
+
+Se documentaron las herramientas de testing local:
+
+- `GET /test-modelos.html`
+- `GET /api/dev/catalog`
+
+### Confirmaciones
+
+- existen solo cuando `NODE_ENV !== "production"`;
+- no deben estar disponibles en produccion;
+- no exponen tokens, `client_secret`, `Authorization` ni links completos;
+- no reemplazan el flujo de validacion `npm run smoke:sandbox`.
+
+---
+
 ## v0.5.2 - Resolucion de inconsistencias de catalogo TPA
 
 ### Fecha

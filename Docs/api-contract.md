@@ -15,6 +15,44 @@ Contrato HTTP del backend adapter TPA-HOM para integración con frontend y valid
   - `amount`
   - credenciales OAuth
 
+## Dev-only testing tools
+
+Endpoints y utilidades solo para `development/sandbox` local:
+
+- `GET /test-modelos.html`
+- `GET /api/dev/catalog`
+
+Condiciones:
+
+- ambos existen solo cuando `NODE_ENV !== "production"`;
+- en producción deben quedar fuera de servicio;
+- no reemplazan el smoke test manual `npm run smoke:sandbox`.
+
+### GET /api/dev/catalog
+
+Descripcion:
+
+- devuelve el catalogo actual con campos seguros para la UI interna de testing.
+
+Campos expuestos:
+
+- `slug`
+- `modelDescription`
+- `planDescription`
+- `amount`
+- `seller`
+- `enabled`
+- `modelId`
+- `planId`
+
+Campos no expuestos:
+
+- tokens
+- `client_secret`
+- credenciales OAuth
+- headers `Authorization`
+- links generados
+
 ## GET /health
 
 ### Descripción

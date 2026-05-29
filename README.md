@@ -39,7 +39,7 @@ http://localhost:3000/test-modelos.html
 
 Uso:
 
-- muestra todos los modelos del catalogo;
+- carga el catalogo desde `GET /api/dev/catalog`;
 - ejecuta `POST /api/toyota-plan/generate-link` enviando solo `slug`;
 - agrega `x-correlation-id` por request desde el navegador;
 - muestra `status`, `linkHost`, `correlationId` y mensaje resumido;
@@ -48,8 +48,40 @@ Uso:
 Importante:
 
 - es solo para testing local en `development/sandbox`;
+- `GET /api/dev/catalog` tambien existe solo en `development`;
 - no debe exponerse en produccion;
 - no imprime tokens, credenciales ni headers `Authorization`.
+
+## Dev-only testing tools
+
+Herramientas disponibles solo para `development/sandbox` local:
+
+- `GET /api/dev/catalog`: expone un catalogo seguro para la UI interna de pruebas;
+- `GET /test-modelos.html`: pagina de testing manual desde navegador.
+
+Alcance:
+
+- `test-modelos.html` permite probar modelos manualmente sin reemplazar el flujo real del backend;
+- `/api/dev/catalog` devuelve solo campos seguros del catalogo:
+  - `slug`
+  - `modelDescription`
+  - `planDescription`
+  - `amount`
+  - `seller`
+  - `enabled`
+  - `modelId`
+  - `planId`
+- no expone tokens, `client_secret`, headers `Authorization` ni links completos.
+
+Regla de despliegue:
+
+- ambos dependen de `NODE_ENV !== "production"`;
+- en produccion `NODE_ENV=production` es obligatorio;
+- estas herramientas no reemplazan el smoke test manual:
+
+```bash
+npm run smoke:sandbox
+```
 
 ## Estado actual
 

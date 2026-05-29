@@ -53,6 +53,29 @@ CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
 - Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorización formal.
 - Cambiar a `production` solo después de validación operativa y checklist firmado.
 
+## Dev-only testing tools
+
+Herramientas internas disponibles solo fuera de producción:
+
+- `GET /test-modelos.html`
+- `GET /api/dev/catalog`
+
+Reglas:
+
+- ambas dependen de `NODE_ENV !== "production"`;
+- en producción `NODE_ENV=production` es obligatorio;
+- no reemplazan el smoke test:
+
+```bash
+npm run smoke:sandbox
+```
+
+Seguridad:
+
+- `/api/dev/catalog` expone solo campos seguros del catalogo;
+- no expone tokens, `client_secret`, headers `Authorization` ni links completos;
+- `test-modelos.html` es solo una ayuda manual de testing local.
+
 ## Validación mínima antes de publicar
 
 1. `GET /health` responde `200`.
@@ -60,6 +83,8 @@ CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
 3. El link devuelto usa el host esperado del ambiente.
 4. Los logs muestran `correlationId`.
 5. No aparecen tokens, secrets ni `Authorization` en logs.
+6. `GET /test-modelos.html` no responde en producción.
+7. `GET /api/dev/catalog` no responde en producción.
 
 ## Smoke sandbox
 
