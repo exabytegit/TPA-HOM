@@ -37,6 +37,12 @@ slug del catalogo actual contra el endpoint local:
 http://localhost:3000/test-modelos.html
 ```
 
+Tambien hay una vista visual tipo landing/cards para testing manual:
+
+```txt
+http://localhost:3000/test-planes.html
+```
+
 Uso:
 
 - carga el catalogo desde `GET /api/dev/catalog`;
@@ -54,6 +60,7 @@ Importante:
 - no debe exponerse en produccion;
 - no imprime tokens, credenciales ni headers `Authorization`.
 - en sandbox la UI distingue rechazo funcional de catalogo TPA vs error transitorio Toyota.
+- `test-planes.html` ofrece la misma validacion con una vista visual de planes (cards).
 
 ## Dev-only testing tools
 
@@ -61,10 +68,12 @@ Herramientas disponibles solo para `development/sandbox` local:
 
 - `GET /api/dev/catalog`: expone un catalogo seguro para la UI interna de pruebas;
 - `GET /test-modelos.html`: pagina de testing manual desde navegador.
+- `GET /test-planes.html`: pagina visual de testing manual por cards.
 
 Alcance:
 
 - `test-modelos.html` permite probar modelos manualmente sin reemplazar el flujo real del backend;
+- `test-planes.html` permite el mismo flujo en formato visual;
 - `/api/dev/catalog` devuelve solo campos seguros del catalogo:
   - `slug`
   - `modelDescription`
@@ -75,6 +84,7 @@ Alcance:
   - `modelId`
   - `planId`
 - no expone tokens, `client_secret`, headers `Authorization` ni links completos.
+- ambas UIs (`test-modelos.html` y `test-planes.html`) envian solo `slug` a `POST /api/toyota-plan/generate-link`.
 - la UI local clasifica errores de sandbox en:
   - `Error catálogo TPA`
   - `Error Toyota transitorio`

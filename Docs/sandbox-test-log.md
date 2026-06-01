@@ -1,5 +1,29 @@
 # Sandbox Test Log
 
+## v0.5.4 - UI visual dev-only de planes
+
+### Fecha
+
+2026-06-01
+
+### Resultado
+
+Se agrega `test-planes.html` como vista visual tipo landing/cards para testing local en
+development/sandbox.
+
+### Confirmaciones
+
+- `GET /test-planes.html`, `GET /test-planes.css` y `GET /test-planes.js` se sirven solo
+  cuando los estaticos dev estan habilitados;
+- la UI carga modelos desde `GET /api/dev/catalog`;
+- la UI envia solo `slug` a `POST /api/toyota-plan/generate-link`;
+- mantiene clasificacion visual de estados (`OK`, `Error catalogo TPA`,
+  `Error Toyota transitorio`, `Error backend/red`);
+- no expone tokens, headers `Authorization`, `client_secret` ni links completos;
+- no reemplaza `npm run smoke:sandbox`.
+
+---
+
 ## v0.5.3 - Clasificacion dev de errores Toyota Plan
 
 ### Fecha

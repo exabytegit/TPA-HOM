@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TPA-HOM Test Planes</title>
+    <link rel="stylesheet" href="/test-planes.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="hero-eyebrow">TPA-HOM / Sandbox local</p>
+        <h1>Toyota Plan: Pensado para vos</h1>
+        <p class="hero-subtitle">
+          Vista visual de testing interno. Carga modelos desde <code>/api/dev/catalog</code> y
+          prueba suscripcion online enviando solo <code>slug</code>.
+        </p>
+      </section>
+
+      <section class="toolbar">
+        <button id="test-all-button" class="btn btn-primary" disabled>Probar todos</button>
+        <button id="reset-button" class="btn btn-secondary" disabled>Limpiar resultados</button>
+        <span class="toolbar-note">Ejecucion secuencial con delay de 500ms.</span>
+      </section>
+
+      <section id="catalog-banner" class="banner">Cargando catalogo de prueba...</section>
+
+      <section class="summary" aria-label="Resumen de resultados">
+        <article class="summary-item">
+          <p>Total</p>
+          <strong id="summary-total">0</strong>
+        </article>
+        <article class="summary-item">
+          <p>Exitos</p>
+          <strong id="summary-success">0</strong>
+        </article>
+        <article class="summary-item">
+          <p>Fallidos</p>
+          <strong id="summary-failed">0</strong>
+        </article>
+      </section>
+
+      <section id="cards-grid" class="cards-grid" aria-live="polite">
+        <article class="empty-card">
+          <h2>Esperando catalogo</h2>
+          <p>Cuando se cargue /api/dev/catalog van a aparecer los planes disponibles.</p>
+        </article>
+      </section>
+    </main>
+
+    <script src="/test-planes.js" defer></script>
+  </body>
+</html>

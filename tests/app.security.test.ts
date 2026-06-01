@@ -144,6 +144,48 @@ describe("app security middleware", () => {
     await request(createApp({ serveStatic: false })).get("/test-modelos.js").expect(404);
   });
 
+  it("serves test-planes.html when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/test-planes.html").expect(200);
+
+    expect(response.text).toContain("Toyota Plan: Pensado para vos");
+    expect(response.text).toContain('<link rel="stylesheet" href="/test-planes.css"');
+    expect(response.text).toContain('<script src="/test-planes.js" defer></script>');
+    expect(response.text).not.toContain("<style");
+    expect(response.text).not.toContain("<script>");
+    expect(response.text).not.toContain("style=");
+    expect(response.text).not.toContain("onclick=");
+    expect(response.text).not.toContain("onload=");
+    expect(response.text).not.toContain("onchange=");
+  });
+
+  it("does not serve test-planes.html when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/test-planes.html").expect(404);
+  });
+
+  it("serves test-planes.css when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/test-planes.css").expect(200);
+
+    expect(response.text).toContain(".hero");
+    expect(response.text).toContain(".cards-grid");
+    expect(response.headers["content-type"]).toContain("text/css");
+  });
+
+  it("serves test-planes.js when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/test-planes.js").expect(200);
+
+    expect(response.text).toContain('fetch("/api/dev/catalog"');
+    expect(response.text).toContain('JSON.stringify({ slug })');
+    expect(response.text).toContain('addEventListener("click", runAllSequentially)');
+    expect(response.text).not.toContain("client_secret");
+    expect(response.text).not.toContain("access_token");
+    expect(response.text).not.toContain("Authorization: Bearer");
+    expect(response.headers["content-type"]).toContain("javascript");
+  });
+
+  it("does not serve test-planes.js when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/test-planes.js").expect(404);
+  });
+
   it("serves development catalog when enabled", async () => {
     const response = await request(createApp({ serveDevCatalog: true }))
       .get("/api/dev/catalog")
