@@ -8,8 +8,8 @@
 
 ### Resultado
 
-Se agrega `test-planes.html` como vista visual tipo landing/cards para testing local en
-development/sandbox.
+Se agrega y luego se rediseña `test-planes.html` como vista visual tipo landing/cards para
+testing local en development/sandbox.
 
 ### Confirmaciones
 
@@ -17,6 +17,10 @@ development/sandbox.
   cuando los estaticos dev estan habilitados;
 - la UI carga modelos desde `GET /api/dev/catalog`;
 - la UI envia solo `slug` a `POST /api/toyota-plan/generate-link`;
+- la card prioriza visual comercial: titulo de modelo, bloque visual, cuota de adhesion,
+  botones full width y diagnostico colapsable;
+- el boton `Suscripcion Online` dispara la generacion sandbox, muestra `Generando...` durante
+  el request y habilita `Abrir link sandbox` solo si hay exito;
 - mantiene clasificacion visual de estados (`OK`, `Error catalogo TPA`,
   `Error Toyota transitorio`, `Error backend/red`);
 - no expone tokens, headers `Authorization`, `client_secret` ni links completos;

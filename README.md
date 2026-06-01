@@ -61,6 +61,7 @@ Importante:
 - no imprime tokens, credenciales ni headers `Authorization`.
 - en sandbox la UI distingue rechazo funcional de catalogo TPA vs error transitorio Toyota.
 - `test-planes.html` ofrece la misma validacion con una vista visual de planes (cards).
+- la vista visual muestra cards compactas, cuota de adhesion, botones comerciales y diagnostico colapsable.
 
 ## Dev-only testing tools
 
@@ -74,6 +75,7 @@ Alcance:
 
 - `test-modelos.html` permite probar modelos manualmente sin reemplazar el flujo real del backend;
 - `test-planes.html` permite el mismo flujo en formato visual;
+- `test-planes.html` mantiene menos datos tecnicos visibles y deja el diagnostico bajo demanda;
 - `/api/dev/catalog` devuelve solo campos seguros del catalogo:
   - `slug`
   - `modelDescription`

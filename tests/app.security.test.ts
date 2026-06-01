@@ -147,6 +147,7 @@ describe("app security middleware", () => {
   it("serves test-planes.html when static files are enabled", async () => {
     const response = await request(createApp({ serveStatic: true })).get("/test-planes.html").expect(200);
 
+    expect(response.text).toContain("Planes de Ahorro");
     expect(response.text).toContain("Toyota Plan: Pensado para vos");
     expect(response.text).toContain('<link rel="stylesheet" href="/test-planes.css"');
     expect(response.text).toContain('<script src="/test-planes.js" defer></script>');
@@ -165,8 +166,9 @@ describe("app security middleware", () => {
   it("serves test-planes.css when static files are enabled", async () => {
     const response = await request(createApp({ serveStatic: true })).get("/test-planes.css").expect(200);
 
-    expect(response.text).toContain(".hero");
+    expect(response.text).toContain(".page-header");
     expect(response.text).toContain(".cards-grid");
+    expect(response.text).toContain(".vehicle-visual");
     expect(response.headers["content-type"]).toContain("text/css");
   });
 
@@ -176,6 +178,7 @@ describe("app security middleware", () => {
     expect(response.text).toContain('fetch("/api/dev/catalog"');
     expect(response.text).toContain('JSON.stringify({ slug })');
     expect(response.text).toContain('addEventListener("click", runAllSequentially)');
+    expect(response.text).toContain("getVehicleVisual");
     expect(response.text).not.toContain("client_secret");
     expect(response.text).not.toContain("access_token");
     expect(response.text).not.toContain("Authorization: Bearer");

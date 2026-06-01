@@ -1,7 +1,9 @@
 const state = new Map();
 const cardElements = new Map();
 const delayMs = 500;
+const autoOpenLink = false;
 let catalog = [];
+let isTestingAll = false;
 
 const cardsGrid = document.getElementById("cards-grid");
 const banner = document.getElementById("catalog-banner");
@@ -9,11 +11,13 @@ const testAllButton = document.getElementById("test-all-button");
 const resetButton = document.getElementById("reset-button");
 const summaryTotal = document.getElementById("summary-total");
 const summarySuccess = document.getElementById("summary-success");
-const summaryFailed = document.getElementById("summary-failed");
+const summaryCatalog = document.getElementById("summary-catalog");
+const summaryUpstream = document.getElementById("summary-upstream");
+const summaryBackend = document.getElementById("summary-backend");
 
 const statusText = {
   idle: "Pendiente",
-  running: "Probando",
+  running: "Generando...",
   ok: "OK",
   "error-catalog": "Error catalogo TPA",
   "error-toyota-transient": "Error Toyota transitorio",
@@ -24,8 +28,8 @@ const formatCurrency = (value) =>
   new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(value);
 
 const createCorrelationId = () =>
@@ -40,8 +44,18 @@ const initialCardState = () => ({
   linkHost: "-",
   correlationId: "-",
   detail: "-",
-  sandboxLink: null
+  sandboxLink: null,
+  advisorMessage: "",
+  detailsOpen: false,
+  diagnosticOpen: false
 });
+
+function getVehicleVisual(modelDescription) {
+  return {
+    type: "placeholder",
+    label: modelInitials(modelDescription)
+  };
+}
 
 function modelInitials(modelDescription) {
   if (typeof modelDescription !== "string" || modelDescription.trim() === "") return "TP";
@@ -62,54 +76,29 @@ function setBanner(message, isError = false) {
 
 function updateSummary() {
   let success = 0;
-  let failed = 0;
+  let catalogErrors = 0;
+  let upstreamErrors = 0;
+  let backendErrors = 0;
 
   for (const item of catalog) {
     const itemState = state.get(item.slug);
     if (!itemState) continue;
     if (itemState.status === "ok") success += 1;
-    if (
-      itemState.status === "error-catalog" ||
-      itemState.status === "error-toyota-transient" ||
-      itemState.status === "error-backend"
-    ) {
-      failed += 1;
-    }
+    if (itemState.status === "error-catalog") catalogErrors += 1;
+    if (itemState.status === "error-toyota-transient") upstreamErrors += 1;
+    if (itemState.status === "error-backend") backendErrors += 1;
   }
 
   summaryTotal.textContent = String(catalog.length);
   summarySuccess.textContent = String(success);
-  summaryFailed.textContent = String(failed);
+  summaryCatalog.textContent = String(catalogErrors);
+  summaryUpstream.textContent = String(upstreamErrors);
+  summaryBackend.textContent = String(backendErrors);
 }
 
-function renderActions(slug, cardState, actionsElement) {
-  const previousTestButton = actionsElement.querySelector("[data-action='test']");
-  if (previousTestButton) {
-    previousTestButton.disabled = cardState.status === "running" || testAllButton.disabled;
-  }
-
-  let openButton = actionsElement.querySelector("[data-action='open']");
-  if (cardState.sandboxLink) {
-    if (!openButton) {
-      openButton = document.createElement("button");
-      openButton.className = "btn btn-secondary";
-      openButton.textContent = "Abrir link sandbox";
-      openButton.setAttribute("data-action", "open");
-      openButton.addEventListener("click", () => {
-        const currentState = state.get(slug);
-        if (!currentState || !currentState.sandboxLink) return;
-        window.open(currentState.sandboxLink, "_blank", "noopener,noreferrer");
-      });
-      actionsElement.appendChild(openButton);
-    }
-
-    openButton.disabled = cardState.status === "running" || testAllButton.disabled;
-    return;
-  }
-
-  if (openButton) {
-    openButton.remove();
-  }
+function setButtonBusy(button, isBusy) {
+  button.disabled = isBusy || isTestingAll;
+  button.textContent = isBusy ? "Generando..." : "Suscripcion Online";
 }
 
 function renderCardState(slug) {
@@ -117,16 +106,32 @@ function renderCardState(slug) {
   const elements = cardElements.get(slug);
   if (!cardState || !elements) return;
 
-  elements.statusBadge.textContent = statusText[cardState.status] || "Pendiente";
+  elements.statusBadge.textContent = statusText[cardState.status] || statusText.idle;
   elements.statusBadge.className = `badge badge-${cardState.status}`;
 
-  elements.httpStatus.textContent = `HTTP: ${cardState.httpStatus}`;
-  elements.code.textContent = `Code: ${cardState.code}`;
-  elements.linkHost.textContent = `linkHost: ${cardState.linkHost}`;
-  elements.correlationId.textContent = `correlationId: ${cardState.correlationId}`;
-  elements.detail.textContent = `Detalle: ${cardState.detail}`;
+  elements.result.textContent =
+    cardState.status === "ok"
+      ? `Link generado. linkHost: ${cardState.linkHost}`
+      : cardState.status === "idle"
+        ? "Listo para probar en sandbox."
+        : cardState.detail;
 
-  renderActions(slug, cardState, elements.actions);
+  setButtonBusy(elements.subscribeButton, cardState.status === "running");
+  elements.openButton.hidden = !cardState.sandboxLink;
+  elements.openButton.disabled = !cardState.sandboxLink || cardState.status === "running";
+
+  elements.detailsPanel.hidden = !cardState.detailsOpen;
+  elements.diagnosticPanel.hidden = !cardState.diagnosticOpen;
+  elements.detailsButton.textContent = cardState.detailsOpen ? "Ocultar detalles" : "Ver mas detalles";
+  elements.diagnosticButton.textContent = cardState.diagnosticOpen ? "Ocultar diagnostico" : "Ver diagnostico";
+
+  elements.advisorMessage.textContent = cardState.advisorMessage;
+  elements.httpStatus.textContent = `HTTP: ${cardState.httpStatus}`;
+  elements.code.textContent = `code: ${cardState.code}`;
+  elements.correlationId.textContent = `correlationId: ${cardState.correlationId}`;
+  elements.detail.textContent = `detalle: ${cardState.detail}`;
+  elements.linkHost.textContent = `linkHost: ${cardState.linkHost}`;
+
   updateSummary();
 }
 
@@ -136,10 +141,11 @@ function setCardState(slug, partialState) {
   renderCardState(slug);
 }
 
-function classifyHttpError(statusCode, upstreamMessage) {
+function classifyHttpError(statusCode, code, upstreamMessage) {
   const normalized = typeof upstreamMessage === "string" ? upstreamMessage.toLowerCase() : "";
 
   if (
+    code === "TOYOTA_PLAN_LINK_REJECTED" ||
     statusCode === 422 ||
     normalized.includes("cuota 1") ||
     normalized.includes("valor de lista")
@@ -148,6 +154,8 @@ function classifyHttpError(statusCode, upstreamMessage) {
   }
 
   if (
+    code === "TOYOTA_PLAN_UPSTREAM_ERROR" ||
+    code === "TOYOTA_PLAN_GENERATE_LINK_TIMEOUT" ||
     statusCode === 502 ||
     statusCode === 503 ||
     statusCode === 504 ||
@@ -160,14 +168,16 @@ function classifyHttpError(statusCode, upstreamMessage) {
 }
 
 async function runSingleTest(slug) {
+  const elements = cardElements.get(slug);
   const correlationId = createCorrelationId();
+
   setCardState(slug, {
     status: "running",
     httpStatus: "-",
     code: "-",
     linkHost: "-",
     correlationId,
-    detail: "Enviando request...",
+    detail: "Generando link sandbox...",
     sandboxLink: null
   });
 
@@ -195,7 +205,7 @@ async function runSingleTest(slug) {
             : "Error sin detalle";
 
       setCardState(slug, {
-        status: classifyHttpError(response.status, upstreamMessage),
+        status: classifyHttpError(response.status, code, upstreamMessage),
         httpStatus: String(response.status),
         code,
         linkHost: "-",
@@ -216,6 +226,10 @@ async function runSingleTest(slug) {
       sandboxLink: body.link,
       detail: `success=true | model=${body.model} | plan=${body.plan} | amount=${body.amount}`
     });
+
+    if (autoOpenLink && elements) {
+      window.open(body.link, "_blank", "noopener,noreferrer");
+    }
   } catch (error) {
     setCardState(slug, {
       status: "error-backend",
@@ -229,11 +243,10 @@ async function runSingleTest(slug) {
 }
 
 async function runAllSequentially() {
+  isTestingAll = true;
   testAllButton.disabled = true;
   resetButton.disabled = true;
-  for (const item of catalog) {
-    renderCardState(item.slug);
-  }
+  for (const item of catalog) renderCardState(item.slug);
 
   try {
     for (const item of catalog) {
@@ -241,11 +254,10 @@ async function runAllSequentially() {
       await sleep(delayMs);
     }
   } finally {
+    isTestingAll = false;
     testAllButton.disabled = false;
     resetButton.disabled = false;
-    for (const item of catalog) {
-      renderCardState(item.slug);
-    }
+    for (const item of catalog) renderCardState(item.slug);
   }
 }
 
@@ -258,9 +270,16 @@ function resetResults() {
 
 function createMetaLine(label, value) {
   const paragraph = document.createElement("p");
-  paragraph.className = "card-meta";
+  paragraph.className = "meta-line";
   paragraph.textContent = `${label}: ${value}`;
   return paragraph;
+}
+
+function createButton(label, className) {
+  const button = document.createElement("button");
+  button.className = className;
+  button.textContent = label;
+  return button;
 }
 
 function buildCards() {
@@ -286,83 +305,150 @@ function buildCards() {
   for (const item of catalog) {
     state.set(item.slug, initialCardState());
 
+    const vehicleVisual = getVehicleVisual(item.modelDescription);
     const card = document.createElement("article");
     card.className = "plan-card";
 
     const visual = document.createElement("div");
-    visual.className = "card-visual";
+    visual.className = "vehicle-visual";
     visual.setAttribute("aria-hidden", "true");
-    visual.textContent = modelInitials(item.modelDescription);
+    const initials = document.createElement("span");
+    initials.className = "vehicle-initials";
+    initials.textContent = vehicleVisual.label;
+    visual.appendChild(initials);
+
+    const body = document.createElement("div");
+    body.className = "card-body";
 
     const title = document.createElement("h2");
+    title.className = "plan-title";
     title.textContent = item.modelDescription;
 
     const plan = document.createElement("p");
-    plan.className = "plan-line";
+    plan.className = "plan-name";
     plan.textContent = item.planDescription;
 
-    const amount = document.createElement("p");
-    amount.className = "amount";
-    amount.textContent = formatCurrency(item.amount);
-
-    const slug = document.createElement("p");
-    slug.className = "slug";
-    const slugCode = document.createElement("code");
-    slugCode.textContent = item.slug;
-    slug.appendChild(document.createTextNode("slug: "));
-    slug.appendChild(slugCode);
+    const amountBox = document.createElement("div");
+    amountBox.className = "amount-box";
+    const amountLabel = document.createElement("p");
+    amountLabel.className = "amount-label";
+    amountLabel.textContent = "Cuota adhesion:";
+    const amountValue = document.createElement("p");
+    amountValue.className = "amount-value";
+    amountValue.textContent = formatCurrency(item.amount);
+    amountBox.appendChild(amountLabel);
+    amountBox.appendChild(amountValue);
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
-    const testButton = document.createElement("button");
-    testButton.className = "btn btn-primary";
-    testButton.textContent = "Suscripcion Online";
-    testButton.setAttribute("data-action", "test");
-    testButton.addEventListener("click", () => runSingleTest(item.slug));
-    actions.appendChild(testButton);
+    const detailsButton = createButton("Ver mas detalles", "btn btn-secondary");
+    const advisorButton = createButton("Solicitar un Asesor", "btn btn-secondary");
+    const subscribeButton = createButton("Suscripcion Online", "btn btn-primary");
+    const openButton = createButton("Abrir link sandbox", "btn btn-secondary");
+    openButton.hidden = true;
+
+    detailsButton.addEventListener("click", () => {
+      const currentState = state.get(item.slug) || initialCardState();
+      setCardState(item.slug, { detailsOpen: !currentState.detailsOpen });
+    });
+
+    advisorButton.addEventListener("click", () => {
+      setCardState(item.slug, { advisorMessage: "Funcion no implementada en sandbox." });
+    });
+
+    subscribeButton.addEventListener("click", () => runSingleTest(item.slug));
+
+    openButton.addEventListener("click", () => {
+      const currentState = state.get(item.slug);
+      if (!currentState || !currentState.sandboxLink) return;
+      window.open(currentState.sandboxLink, "_blank", "noopener,noreferrer");
+    });
+
+    actions.appendChild(detailsButton);
+    actions.appendChild(advisorButton);
+    actions.appendChild(subscribeButton);
+    actions.appendChild(openButton);
 
     const statusBadge = document.createElement("span");
     statusBadge.className = "badge badge-idle";
     statusBadge.textContent = statusText.idle;
 
-    const httpStatus = createMetaLine("HTTP", "-");
-    const code = createMetaLine("Code", "-");
-    const linkHost = createMetaLine("linkHost", "-");
-    const correlationId = createMetaLine("correlationId", "-");
-    const detail = createMetaLine("Detalle", "-");
+    const result = document.createElement("p");
+    result.className = "result";
+    result.textContent = "Listo para probar en sandbox.";
+
+    const advisorMessage = document.createElement("p");
+    advisorMessage.className = "result";
+
+    const detailsPanel = document.createElement("div");
+    detailsPanel.className = "details-panel";
+    detailsPanel.hidden = true;
+    detailsPanel.appendChild(createMetaLine("Modelo", item.modelDescription));
+    detailsPanel.appendChild(createMetaLine("Plan", item.planDescription));
+    detailsPanel.appendChild(createMetaLine("Amount", formatCurrency(item.amount)));
+    detailsPanel.appendChild(createMetaLine("modelId", item.modelId));
+    detailsPanel.appendChild(createMetaLine("planId", item.planId));
+
+    const diagnosticButton = createButton("Ver diagnostico", "btn btn-secondary");
+
+    const diagnosticPanel = document.createElement("div");
+    diagnosticPanel.className = "diagnostic-panel";
+    diagnosticPanel.hidden = true;
+    const slug = createMetaLine("slug", item.slug);
     const modelId = createMetaLine("modelId", item.modelId);
     const planId = createMetaLine("planId", item.planId);
     const seller = createMetaLine("seller", item.seller);
-    const enabled = createMetaLine("enabled", String(item.enabled));
+    const httpStatus = createMetaLine("HTTP", "-");
+    const code = createMetaLine("code", "-");
+    const correlationId = createMetaLine("correlationId", "-");
+    const detail = createMetaLine("detalle", "-");
+    const linkHost = createMetaLine("linkHost", "-");
+    diagnosticPanel.appendChild(slug);
+    diagnosticPanel.appendChild(modelId);
+    diagnosticPanel.appendChild(planId);
+    diagnosticPanel.appendChild(seller);
+    diagnosticPanel.appendChild(httpStatus);
+    diagnosticPanel.appendChild(code);
+    diagnosticPanel.appendChild(correlationId);
+    diagnosticPanel.appendChild(detail);
+    diagnosticPanel.appendChild(linkHost);
+
+    diagnosticButton.addEventListener("click", () => {
+      const currentState = state.get(item.slug) || initialCardState();
+      setCardState(item.slug, { diagnosticOpen: !currentState.diagnosticOpen });
+    });
+
+    body.appendChild(title);
+    body.appendChild(plan);
+    body.appendChild(amountBox);
+    body.appendChild(actions);
+    body.appendChild(statusBadge);
+    body.appendChild(result);
+    body.appendChild(advisorMessage);
+    body.appendChild(detailsPanel);
+    body.appendChild(diagnosticButton);
+    body.appendChild(diagnosticPanel);
 
     card.appendChild(visual);
-    card.appendChild(title);
-    card.appendChild(plan);
-    card.appendChild(amount);
-    card.appendChild(actions);
-    card.appendChild(statusBadge);
-    card.appendChild(httpStatus);
-    card.appendChild(code);
-    card.appendChild(linkHost);
-    card.appendChild(correlationId);
-    card.appendChild(detail);
-    card.appendChild(modelId);
-    card.appendChild(planId);
-    card.appendChild(seller);
-    card.appendChild(enabled);
-    card.appendChild(slug);
-
+    card.appendChild(body);
     cardsGrid.appendChild(card);
 
     cardElements.set(item.slug, {
-      actions,
+      detailsButton,
+      diagnosticButton,
+      subscribeButton,
+      openButton,
       statusBadge,
+      result,
+      advisorMessage,
+      detailsPanel,
+      diagnosticPanel,
       httpStatus,
       code,
-      linkHost,
       correlationId,
-      detail
+      detail,
+      linkHost
     });
 
     renderCardState(item.slug);

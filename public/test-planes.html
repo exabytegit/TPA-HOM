@@ -3,24 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TPA-HOM Test Planes</title>
+    <title>TPA-HOM Planes de Ahorro</title>
     <link rel="stylesheet" href="/test-planes.css" />
   </head>
   <body>
     <main class="page">
-      <section class="hero">
-        <p class="hero-eyebrow">TPA-HOM / Sandbox local</p>
-        <h1>Toyota Plan: Pensado para vos</h1>
-        <p class="hero-subtitle">
-          Vista visual de testing interno. Carga modelos desde <code>/api/dev/catalog</code> y
-          prueba suscripcion online enviando solo <code>slug</code>.
-        </p>
-      </section>
+      <header class="page-header">
+        <p class="eyebrow">TPA-HOM / Sandbox local</p>
+        <h1>Planes de Ahorro</h1>
+        <p>Toyota Plan: Pensado para vos</p>
+      </header>
 
       <section class="toolbar">
         <button id="test-all-button" class="btn btn-primary" disabled>Probar todos</button>
         <button id="reset-button" class="btn btn-secondary" disabled>Limpiar resultados</button>
-        <span class="toolbar-note">Ejecucion secuencial con delay de 500ms.</span>
+        <span class="toolbar-note">Vista visual de testing local. Ejecucion secuencial con delay de 500ms.</span>
       </section>
 
       <section id="catalog-banner" class="banner">Cargando catalogo de prueba...</section>
@@ -31,12 +28,20 @@
           <strong id="summary-total">0</strong>
         </article>
         <article class="summary-item">
-          <p>Exitos</p>
+          <p>OK</p>
           <strong id="summary-success">0</strong>
         </article>
         <article class="summary-item">
-          <p>Fallidos</p>
-          <strong id="summary-failed">0</strong>
+          <p>Error catalogo TPA</p>
+          <strong id="summary-catalog">0</strong>
+        </article>
+        <article class="summary-item">
+          <p>Error Toyota transitorio</p>
+          <strong id="summary-upstream">0</strong>
+        </article>
+        <article class="summary-item">
+          <p>Error backend/red</p>
+          <strong id="summary-backend">0</strong>
         </article>
       </section>
 
