@@ -1,5 +1,36 @@
 # Sandbox Test Log
 
+## v0.5.5 - Evidencia rechazo generalizado sandbox Toyota/TPA
+
+### Fecha
+
+2026-06-04
+
+### Resultado
+
+Se documento evidencia para escalar a Toyota/TPA un rechazo funcional generalizado del sandbox.
+
+### Confirmaciones
+
+- `npm run catalog:compare-sheet`: 9/9 coincidencias entre Google Sheet publico y catalogo local;
+- `amount_differences`: 0;
+- `npm run smoke:sheet`: 9/9 rechazados funcionalmente por Toyota Plan sandbox;
+- `ok_count`: 0;
+- `reject_count`: 9;
+- `upstream_transient_count`: 0;
+- `timeout_count`: 0;
+- mensaje comun sanitizado: `Tuvimos un inconveniente verificando los datos ingresados`;
+- OAuth sandbox funciona;
+- no se modifico catalogo;
+- no se tocaron credenciales ni `.env`;
+- no se documentaron tokens, headers `Authorization`, `Bearer` ni links completos.
+
+### Documento de soporte
+
+- [Toyota/TPA Support Request](./toyota-tpa-support-request.md)
+
+---
+
 ## v0.5.4 - UI visual dev-only de planes
 
 ### Fecha

@@ -207,6 +207,8 @@ solo cuando el backend este detras de un unico proxy reverso confiable que limpi
 ```bash
 npm run dev        # servidor en desarrollo
 npm run smoke:sandbox # validacion controlada del catalogo contra sandbox
+npm run smoke:sheet # validacion sandbox usando filas del Google Sheet publico
+npm run catalog:compare-sheet # compara catalogo local contra Google Sheet publico
 npm run build      # compila TypeScript a dist/
 npm start          # ejecuta dist/server.js
 npm run lint       # ESLint
@@ -272,6 +274,27 @@ npm run smoke:sandbox
 El script carga `.env`, exige `TOYOTA_PLAN_ENV=sandbox`, aborta si detecta `production`, usa el
 catalogo real y genera un resumen seguro en `Docs/sandbox-catalog-validation-log.md` sin imprimir
 tokens, secrets ni links completos.
+
+Validacion sandbox basada en Google Sheet:
+
+```bash
+npm run smoke:sheet
+```
+
+El comando descarga el CSV publico, busca el `slug` local por `modelId-planId-amount` y ejecuta
+`generateLink` contra sandbox de forma secuencial con delay de 500ms. Genera
+`Docs/sheet-smoke-report.md`, guarda solo `linkHost` en exitos y no modifica el catalogo ni expone
+tokens, `Authorization`, `Bearer`, `client_secret` o links completos.
+
+Comparacion contra Google Sheet de amounts:
+
+```bash
+npm run catalog:compare-sheet
+```
+
+El comando descarga el CSV publico de Google Sheets, compara por `modelId-planId` contra
+`src/config/toyota-plan.catalog.json` y genera `Docs/catalog-sheet-compare-report.md`. Es una
+herramienta de solo lectura: no modifica el catalogo, `.env`, credenciales ni llamadas Toyota Plan.
 
 ## Endpoint
 
