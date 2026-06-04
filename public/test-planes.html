@@ -14,36 +14,14 @@
         <p>Toyota Plan: Pensado para vos</p>
       </header>
 
-      <section class="toolbar">
-        <button id="test-all-button" class="btn btn-primary" disabled>Probar todos</button>
-        <button id="reset-button" class="btn btn-secondary" disabled>Limpiar resultados</button>
-        <span class="toolbar-note">Vista visual de testing local. Ejecucion secuencial con delay de 500ms.</span>
-      </section>
-
-      <section id="catalog-banner" class="banner">Cargando catalogo de prueba...</section>
-
-      <section class="summary" aria-label="Resumen de resultados">
-        <article class="summary-item">
-          <p>Total</p>
-          <strong id="summary-total">0</strong>
-        </article>
-        <article class="summary-item">
-          <p>OK</p>
-          <strong id="summary-success">0</strong>
-        </article>
-        <article class="summary-item">
-          <p>Error catalogo TPA</p>
-          <strong id="summary-catalog">0</strong>
-        </article>
-        <article class="summary-item">
-          <p>Error Toyota transitorio</p>
-          <strong id="summary-upstream">0</strong>
-        </article>
-        <article class="summary-item">
-          <p>Error backend/red</p>
-          <strong id="summary-backend">0</strong>
-        </article>
-      </section>
+      <details class="sandbox-tools">
+        <summary>Herramientas sandbox</summary>
+        <div class="sandbox-tools-content">
+          <button id="test-all-button" class="btn btn-secondary" disabled>Probar todos</button>
+          <button id="reset-button" class="btn btn-secondary" disabled>Limpiar resultados</button>
+          <p id="load-status">Cargando catalogo de prueba...</p>
+        </div>
+      </details>
 
       <section id="cards-grid" class="cards-grid" aria-live="polite">
         <article class="empty-card">

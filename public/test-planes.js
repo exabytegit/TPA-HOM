@@ -6,22 +6,29 @@ let catalog = [];
 let isTestingAll = false;
 
 const cardsGrid = document.getElementById("cards-grid");
-const banner = document.getElementById("catalog-banner");
+const loadStatus = document.getElementById("load-status");
 const testAllButton = document.getElementById("test-all-button");
 const resetButton = document.getElementById("reset-button");
-const summaryTotal = document.getElementById("summary-total");
-const summarySuccess = document.getElementById("summary-success");
-const summaryCatalog = document.getElementById("summary-catalog");
-const summaryUpstream = document.getElementById("summary-upstream");
-const summaryBackend = document.getElementById("summary-backend");
 
 const statusText = {
   idle: "Pendiente",
   running: "Generando...",
-  ok: "OK",
-  "error-catalog": "Error catalogo TPA",
-  "error-toyota-transient": "Error Toyota transitorio",
-  "error-backend": "Error backend/red"
+  ok: "Disponible",
+  "error-catalog": "Error catalogo",
+  "error-toyota-transient": "Error temporal",
+  "error-backend": "Error temporal"
+};
+
+const vehicleImagesByModelPlan = {
+  "105-115": "/Images/105-COROLLA_CROSS_XLI_CVT-115-70-30_84_M_DIF_H.jpg",
+  "107-115": "/Images/107-COROLLA_XLI_CVT-115-70-30_84_M_DIF_H.jpg",
+  "108-108": "/Images/108-YARIS_XS_CVT-108-70-30_DIF_G_84_MESES.jpg",
+  "111-113": "/Images/111-HIACE_FURGON-113-PLAN_100_DIF_G_84M.webp",
+  "113-113": "/Images/113-YARIS_XS_CVT_5P_FLEX-113-PLAN_100_DIF_G_84M.png",
+  "114-113": "/Images/114-HILUX_4X4_DX_AT-113-PLAN_100_DIF_G_84M.jpg",
+  "115-115": "/Images/115-YARIS_CROSS_XLI_CVT_FLEX-115-70-30_84_M_DIF_H.webp",
+  "116-114": "/Images/116-YARIS_CROSS_XEI_HEV-114-100_84_M_DIF_H.webp",
+  "96-108": "/Images/96-HILUX_4X2_DX_MT-108-70-30_DIF_G_84_MESES.png"
 };
 
 const formatCurrency = (value) =>
@@ -50,11 +57,9 @@ const initialCardState = () => ({
   diagnosticOpen: false
 });
 
-function getVehicleVisual(modelDescription) {
-  return {
-    type: "placeholder",
-    label: modelInitials(modelDescription)
-  };
+function getVehicleImageUrl(item) {
+  const key = `${item.modelId}-${item.planId}`;
+  return vehicleImagesByModelPlan[key] || null;
 }
 
 function modelInitials(modelDescription) {
@@ -69,31 +74,8 @@ function modelInitials(modelDescription) {
   return parts.join("") || "TP";
 }
 
-function setBanner(message, isError = false) {
-  banner.textContent = message;
-  banner.className = isError ? "banner error" : "banner";
-}
-
-function updateSummary() {
-  let success = 0;
-  let catalogErrors = 0;
-  let upstreamErrors = 0;
-  let backendErrors = 0;
-
-  for (const item of catalog) {
-    const itemState = state.get(item.slug);
-    if (!itemState) continue;
-    if (itemState.status === "ok") success += 1;
-    if (itemState.status === "error-catalog") catalogErrors += 1;
-    if (itemState.status === "error-toyota-transient") upstreamErrors += 1;
-    if (itemState.status === "error-backend") backendErrors += 1;
-  }
-
-  summaryTotal.textContent = String(catalog.length);
-  summarySuccess.textContent = String(success);
-  summaryCatalog.textContent = String(catalogErrors);
-  summaryUpstream.textContent = String(upstreamErrors);
-  summaryBackend.textContent = String(backendErrors);
+function setLoadStatus(message) {
+  loadStatus.textContent = message;
 }
 
 function setButtonBusy(button, isBusy) {
@@ -121,9 +103,8 @@ function renderCardState(slug) {
   elements.openButton.disabled = !cardState.sandboxLink || cardState.status === "running";
 
   elements.detailsPanel.hidden = !cardState.detailsOpen;
-  elements.diagnosticPanel.hidden = !cardState.diagnosticOpen;
+  elements.diagnosticDetails.open = cardState.diagnosticOpen;
   elements.detailsButton.textContent = cardState.detailsOpen ? "Ocultar detalles" : "Ver mas detalles";
-  elements.diagnosticButton.textContent = cardState.diagnosticOpen ? "Ocultar diagnostico" : "Ver diagnostico";
 
   elements.advisorMessage.textContent = cardState.advisorMessage;
   elements.httpStatus.textContent = `HTTP: ${cardState.httpStatus}`;
@@ -131,8 +112,6 @@ function renderCardState(slug) {
   elements.correlationId.textContent = `correlationId: ${cardState.correlationId}`;
   elements.detail.textContent = `detalle: ${cardState.detail}`;
   elements.linkHost.textContent = `linkHost: ${cardState.linkHost}`;
-
-  updateSummary();
 }
 
 function setCardState(slug, partialState) {
@@ -298,24 +277,34 @@ function buildCards() {
     emptyCard.appendChild(title);
     emptyCard.appendChild(message);
     cardsGrid.appendChild(emptyCard);
-    updateSummary();
     return;
   }
 
   for (const item of catalog) {
     state.set(item.slug, initialCardState());
 
-    const vehicleVisual = getVehicleVisual(item.modelDescription);
     const card = document.createElement("article");
     card.className = "plan-card";
 
     const visual = document.createElement("div");
-    visual.className = "vehicle-visual";
-    visual.setAttribute("aria-hidden", "true");
-    const initials = document.createElement("span");
-    initials.className = "vehicle-initials";
-    initials.textContent = vehicleVisual.label;
-    visual.appendChild(initials);
+    visual.className = "vehicle-media";
+    const imageUrl = getVehicleImageUrl(item);
+
+    if (imageUrl) {
+      const image = document.createElement("img");
+      image.className = "vehicle-image";
+      image.src = imageUrl;
+      image.alt = item.modelDescription;
+      image.loading = "lazy";
+      visual.appendChild(image);
+    } else {
+      visual.classList.add("vehicle-placeholder");
+      visual.setAttribute("aria-hidden", "true");
+      const initials = document.createElement("span");
+      initials.className = "vehicle-initials";
+      initials.textContent = modelInitials(item.modelDescription);
+      visual.appendChild(initials);
+    }
 
     const body = document.createElement("div");
     body.className = "card-body";
@@ -390,11 +379,14 @@ function buildCards() {
     detailsPanel.appendChild(createMetaLine("modelId", item.modelId));
     detailsPanel.appendChild(createMetaLine("planId", item.planId));
 
-    const diagnosticButton = createButton("Ver diagnostico", "btn btn-secondary");
+    const diagnosticDetails = document.createElement("details");
+    diagnosticDetails.className = "diagnostic-details";
+    const diagnosticSummary = document.createElement("summary");
+    diagnosticSummary.textContent = "Ver diagnostico tecnico";
+    diagnosticDetails.appendChild(diagnosticSummary);
 
     const diagnosticPanel = document.createElement("div");
     diagnosticPanel.className = "diagnostic-panel";
-    diagnosticPanel.hidden = true;
     const slug = createMetaLine("slug", item.slug);
     const modelId = createMetaLine("modelId", item.modelId);
     const planId = createMetaLine("planId", item.planId);
@@ -413,10 +405,12 @@ function buildCards() {
     diagnosticPanel.appendChild(correlationId);
     diagnosticPanel.appendChild(detail);
     diagnosticPanel.appendChild(linkHost);
+    diagnosticDetails.appendChild(diagnosticPanel);
 
-    diagnosticButton.addEventListener("click", () => {
-      const currentState = state.get(item.slug) || initialCardState();
-      setCardState(item.slug, { diagnosticOpen: !currentState.diagnosticOpen });
+    diagnosticDetails.addEventListener("toggle", () => {
+      const currentState = state.get(item.slug);
+      if (!currentState || currentState.diagnosticOpen === diagnosticDetails.open) return;
+      state.set(item.slug, { ...currentState, diagnosticOpen: diagnosticDetails.open });
     });
 
     body.appendChild(title);
@@ -427,8 +421,7 @@ function buildCards() {
     body.appendChild(result);
     body.appendChild(advisorMessage);
     body.appendChild(detailsPanel);
-    body.appendChild(diagnosticButton);
-    body.appendChild(diagnosticPanel);
+    body.appendChild(diagnosticDetails);
 
     card.appendChild(visual);
     card.appendChild(body);
@@ -436,14 +429,13 @@ function buildCards() {
 
     cardElements.set(item.slug, {
       detailsButton,
-      diagnosticButton,
+      diagnosticDetails,
       subscribeButton,
       openButton,
       statusBadge,
       result,
       advisorMessage,
       detailsPanel,
-      diagnosticPanel,
       httpStatus,
       code,
       correlationId,
@@ -453,13 +445,11 @@ function buildCards() {
 
     renderCardState(item.slug);
   }
-
-  updateSummary();
 }
 
 async function loadCatalog() {
   const correlationId = createCorrelationId();
-  setBanner("Cargando catalogo de prueba...");
+  setLoadStatus("Cargando catalogo de prueba...");
   testAllButton.disabled = true;
   resetButton.disabled = true;
 
@@ -484,15 +474,14 @@ async function loadCatalog() {
     buildCards();
     testAllButton.disabled = catalog.length === 0;
     resetButton.disabled = catalog.length === 0;
-    setBanner(`Catalogo cargado: ${catalog.length} modelos disponibles para testing local.`);
+    setLoadStatus(`Catalogo cargado: ${catalog.length} modelos disponibles para testing local.`);
   } catch (error) {
     catalog = [];
     buildCards();
-    setBanner(
+    setLoadStatus(
       `No se pudo cargar el catalogo local. ${
         error instanceof Error ? error.message : "Error desconocido"
-      }`,
-      true
+      }`
     );
   }
 }

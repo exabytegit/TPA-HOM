@@ -19,11 +19,14 @@ testing local en development/sandbox.
 - la UI envia solo `slug` a `POST /api/toyota-plan/generate-link`;
 - la card prioriza visual comercial: titulo de modelo, bloque visual, cuota de adhesion,
   botones full width y diagnostico colapsable;
+- la vista usa imagenes locales desde `public/Images`, mapeadas por `modelId-planId`,
+  sin hotlinkear assets externos;
 - el boton `Suscripcion Online` dispara la generacion sandbox, muestra `Generando...` durante
   el request y habilita `Abrir link sandbox` solo si hay exito;
 - mantiene clasificacion visual de estados (`OK`, `Error catalogo TPA`,
   `Error Toyota transitorio`, `Error backend/red`);
 - no expone tokens, headers `Authorization`, `client_secret` ni links completos;
+- si cambia el catalogo, se debe revisar el mapeo de imagenes locales;
 - no reemplaza `npm run smoke:sandbox`.
 
 ---

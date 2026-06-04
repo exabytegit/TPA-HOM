@@ -151,6 +151,12 @@ describe("app security middleware", () => {
     expect(response.text).toContain("Toyota Plan: Pensado para vos");
     expect(response.text).toContain('<link rel="stylesheet" href="/test-planes.css"');
     expect(response.text).toContain('<script src="/test-planes.js" defer></script>');
+    expect(response.text).not.toContain('class="toolbar"');
+    expect(response.text).not.toContain('id="catalog-banner"');
+    expect(response.text).not.toContain('class="banner"');
+    expect(response.text).not.toContain('class="summary"');
+    expect(response.text).not.toContain("Error Toyota transitorio");
+    expect(response.text).not.toContain("Error backend/red");
     expect(response.text).not.toContain("<style");
     expect(response.text).not.toContain("<script>");
     expect(response.text).not.toContain("style=");
@@ -168,7 +174,10 @@ describe("app security middleware", () => {
 
     expect(response.text).toContain(".page-header");
     expect(response.text).toContain(".cards-grid");
-    expect(response.text).toContain(".vehicle-visual");
+    expect(response.text).toContain(".vehicle-media");
+    expect(response.text).toContain(".vehicle-image");
+    expect(response.text).toContain(".sandbox-tools");
+    expect(response.text).toContain(".diagnostic-details");
     expect(response.headers["content-type"]).toContain("text/css");
   });
 
@@ -178,7 +187,17 @@ describe("app security middleware", () => {
     expect(response.text).toContain('fetch("/api/dev/catalog"');
     expect(response.text).toContain('JSON.stringify({ slug })');
     expect(response.text).toContain('addEventListener("click", runAllSequentially)');
-    expect(response.text).toContain("getVehicleVisual");
+    expect(response.text).toContain("vehicleImagesByModelPlan");
+    expect(response.text).toContain('document.createElement("details")');
+    expect(response.text).toContain('document.createElement("summary")');
+    expect(response.text).toContain("Ver diagnostico tecnico");
+    expect(response.text).toContain("Ver mas detalles");
+    expect(response.text).toContain("Solicitar un Asesor");
+    expect(response.text).toContain("Suscripcion Online");
+    expect(response.text).toContain("Abrir link sandbox");
+    expect(response.text).toContain("/Images/114-HILUX_4X4_DX_AT-113-PLAN_100_DIF_G_84M.jpg");
+    expect(response.text).not.toContain("https://www.lineup.com.ar");
+    expect(response.text).not.toContain("cbredes.s3");
     expect(response.text).not.toContain("client_secret");
     expect(response.text).not.toContain("access_token");
     expect(response.text).not.toContain("Authorization: Bearer");
@@ -187,6 +206,14 @@ describe("app security middleware", () => {
 
   it("does not serve test-planes.js when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/test-planes.js").expect(404);
+  });
+
+  it("serves local vehicle images when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true }))
+      .get("/Images/114-HILUX_4X4_DX_AT-113-PLAN_100_DIF_G_84M.jpg")
+      .expect(200);
+
+    expect(response.headers["content-type"]).toContain("image/jpeg");
   });
 
   it("serves development catalog when enabled", async () => {
