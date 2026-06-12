@@ -1,12 +1,14 @@
 # Deployment Checklist
 
-Checklist de despliegue y preproducción para TPA-HOM.
+Checklist de despliegue y preproduccion para TPA-HOM.
 
 ## Variables obligatorias
 
 - `NODE_ENV`
 - `PORT`
 - `TRUST_PROXY`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
 - `CORS_ALLOWED_ORIGINS`
 - `RATE_LIMIT_WINDOW_MS`
 - `RATE_LIMIT_MAX_REQUESTS`
@@ -33,14 +35,14 @@ Checklist de despliegue y preproducción para TPA-HOM.
 ## TRUST_PROXY
 
 - `TRUST_PROXY=false` para desarrollo local o despliegue directo.
-- `TRUST_PROXY=1` solo si el backend queda detrás de un único proxy reverso confiable.
-- Confirmar topología real antes de habilitarlo.
+- `TRUST_PROXY=1` solo si el backend queda detras de un unico proxy reverso confiable.
+- Confirmar topologia real antes de habilitarlo.
 
-## CORS de producción
+## CORS de produccion
 
 - Definir `CORS_ALLOWED_ORIGINS` con dominios reales del frontend.
 - No usar `*`.
-- No dejar vacío en producción.
+- No dejar vacio en produccion.
 
 Ejemplo:
 
@@ -50,20 +52,25 @@ CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
 
 ## TOYOTA_PLAN_ENV
 
-- Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorización formal.
-- Cambiar a `production` solo después de validación operativa y checklist firmado.
+- Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorizacion formal.
+- Cambiar a `production` solo despues de validacion operativa y checklist firmado.
 
 ## Dev-only testing tools
 
-Herramientas internas disponibles solo fuera de producción:
+Herramientas internas disponibles solo fuera de produccion:
 
 - `GET /test-modelos.html`
+- `GET /test-planes.html`
+- `GET /TPA.html`
+- `GET /admin.html`
 - `GET /api/dev/catalog`
+- `GET /api/dev/catalog-sheet`
+- `POST /api/dev/admin/login`
 
 Reglas:
 
-- ambas dependen de `NODE_ENV !== "production"`;
-- en producción `NODE_ENV=production` es obligatorio;
+- todas dependen de `NODE_ENV !== "production"`;
+- en produccion `NODE_ENV=production` es obligatorio;
 - no reemplazan el smoke test:
 
 ```bash
@@ -73,18 +80,23 @@ npm run smoke:sandbox
 Seguridad:
 
 - `/api/dev/catalog` expone solo campos seguros del catalogo;
+- `/api/dev/admin/login` solo valida credenciales de desarrollo y devuelve 401 generico ante error;
 - no expone tokens, `client_secret`, headers `Authorization` ni links completos;
-- `test-modelos.html` es solo una ayuda manual de testing local.
+- `test-modelos.html` es solo una ayuda manual de testing local;
+- `admin.html` es la nueva vista interna con login simple para development/sandbox;
+- `admin.html` no debe exponerse en produccion como mecanismo de seguridad real.
 
-## Validación mínima antes de publicar
+## Validacion minima antes de publicar
 
 1. `GET /health` responde `200`.
 2. `POST /api/toyota-plan/generate-link` funciona con un `slug` controlado.
 3. El link devuelto usa el host esperado del ambiente.
 4. Los logs muestran `correlationId`.
 5. No aparecen tokens, secrets ni `Authorization` en logs.
-6. `GET /test-modelos.html` no responde en producción.
-7. `GET /api/dev/catalog` no responde en producción.
+6. `GET /test-modelos.html` no responde en produccion.
+7. `GET /admin.html` no responde en produccion.
+8. `GET /api/dev/catalog` no responde en produccion.
+9. `POST /api/dev/admin/login` no responde en produccion.
 
 ## Smoke sandbox
 
@@ -101,16 +113,16 @@ Revisar:
 - cantidad fallida;
 - archivo `Docs/sandbox-catalog-validation-log.md`.
 
-## Rollback básico
+## Rollback basico
 
-1. Restaurar la versión previa del backend.
+1. Restaurar la version previa del backend.
 2. Verificar `GET /health`.
-3. Confirmar que el frontend deje de llamar a una versión defectuosa.
+3. Confirmar que el frontend deje de llamar a una version defectuosa.
 4. Revisar logs con `correlationId` de requests fallidos.
 
 ## Logging seguro
 
-- Confirmar sanitización recursiva activa.
+- Confirmar sanitizacion recursiva activa.
 - Confirmar que no se imprimen:
   - `client_secret`
   - tokens OAuth

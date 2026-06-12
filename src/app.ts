@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import { z } from "zod";
 import { corsConfig } from "./config/corsConfig";
 import { env } from "./config/env";
 import { toyotaPlanConfig } from "./config/toyotaPlanConfig";
@@ -56,6 +57,35 @@ export const createApp = (options?: {
       } catch (error) {
         next(error);
       }
+    });
+
+    const adminLoginSchema = z.object({
+      username: z.string().min(1),
+      password: z.string().min(1)
+    });
+
+    app.post("/api/dev/admin/login", (req, res) => {
+      const result = adminLoginSchema.safeParse(req.body);
+      if (!result.success) {
+        res.status(401).json({
+          success: false,
+          message: "Credenciales invalidas"
+        });
+        return;
+      }
+
+      const { username, password } = result.data;
+      if (username !== env.ADMIN_USERNAME || password !== env.ADMIN_PASSWORD) {
+        res.status(401).json({
+          success: false,
+          message: "Credenciales invalidas"
+        });
+        return;
+      }
+
+      res.json({
+        success: true
+      });
     });
   }
 

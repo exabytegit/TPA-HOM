@@ -49,6 +49,12 @@ Y una vista comercial mas limpia para prueba de suscripcion:
 http://localhost:3000/TPA.html
 ```
 
+Y una vista de administracion interna con login simple para development/sandbox:
+
+```txt
+http://localhost:3000/admin.html
+```
+
 Uso:
 
 - carga el catalogo desde `GET /api/dev/catalog`;
@@ -63,6 +69,8 @@ Uso:
   comercial, sin diagnostico tecnico visible en la vista principal.
 - `TPA.html` fue refinada como una landing comercial premium con hero, beneficios, pasos,
   cards y FAQ, pensada para usuarios finales y no para lectura tecnica.
+- `admin.html` es la nueva vista de administracion interna con login simple basado en
+  `sessionStorage`; solo debe usarse en `development/sandbox`.
 
 Importante:
 
@@ -85,12 +93,17 @@ Herramientas disponibles solo para `development/sandbox` local:
 - `GET /api/dev/catalog`: expone un catalogo seguro para la UI interna de pruebas;
 - `GET /test-modelos.html`: pagina de testing manual desde navegador.
 - `GET /test-planes.html`: pagina visual de testing manual por cards.
+- `GET /admin.html`: vista de administracion interna con login simple.
 
 Alcance:
 
 - `test-modelos.html` permite probar modelos manualmente sin reemplazar el flujo real del backend;
 - `test-planes.html` permite el mismo flujo en formato visual;
 - `test-planes.html` mantiene menos datos tecnicos visibles y deja el diagnostico bajo demanda;
+- `admin.html` reemplaza conceptualmente la experiencia de administracion interna sobre
+  `test-modelos.html`, pero `test-modelos.html` se mantiene por compatibilidad temporal;
+- `admin.html` requiere autenticacion simple contra `POST /api/dev/admin/login` con credenciales
+  cargadas desde `.env` (`ADMIN_USERNAME`, `ADMIN_PASSWORD`);
 - si cambia el catalogo, revisar el mapeo local de imagenes por `modelId-planId` en `/test-planes.js`;
 - `test-modelos.html` tiene un boton `Actualizar precios` que consulta el Sheet publico via backend dev-only y actualiza solo la vista en memoria;
 - `/api/dev/catalog` devuelve solo campos seguros del catalogo:
@@ -104,6 +117,8 @@ Alcance:
   - `planId`
 - no expone tokens, `client_secret`, headers `Authorization` ni links completos.
 - ambas UIs (`test-modelos.html` y `test-planes.html`) envian solo `slug` a `POST /api/toyota-plan/generate-link`.
+- `admin.html` conserva el flujo tecnico de prueba y agrega una seccion visual de
+  "Actualizacion de precios" que por ahora no escribe catalogo.
 - la UI local clasifica errores de sandbox en:
   - `Error catálogo TPA`
   - `Error Toyota transitorio`
@@ -185,6 +200,8 @@ NODE_ENV=development
 PORT=3000
 TRUST_PROXY=false
 ENABLE_METRICS=false
+ADMIN_USERNAME=homu
+ADMIN_PASSWORD=change_me_local
 
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 

@@ -1,5 +1,29 @@
 # Sandbox Test Log
 
+## v0.5.8 - Administracion interna con login simple
+
+### Fecha
+
+2026-06-12
+
+### Resultado
+
+Se agrego `admin.html` como nueva vista de administracion interna para development/sandbox,
+con login simple contra `POST /api/dev/admin/login` y una seccion visual de actualizacion de
+precios preparada para una etapa posterior.
+
+### Confirmaciones
+
+- `admin.html` y `admin.js` se sirven solo cuando los estaticos de desarrollo estan habilitados;
+- `POST /api/dev/admin/login` valida credenciales contra variables de entorno y responde 401
+  generico si no coinciden;
+- no se agrego ningun endpoint de escritura de precios;
+- la seccion de actualizacion de precios solo informa que por ahora no esta habilitada;
+- `test-modelos.html` se mantiene por compatibilidad temporal;
+- no se documentan tokens, secretos ni links completos.
+
+---
+
 ## v0.5.7 - Refinamiento visual premium de TPA
 
 ### Fecha

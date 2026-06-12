@@ -238,6 +238,27 @@ describe("app security middleware", () => {
     await request(createApp({ serveStatic: false })).get("/TPA.html").expect(404);
   });
 
+  it("serves admin.html when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/admin.html").expect(200);
+
+    expect(response.text).toContain("Administracion TPA-HOM");
+    expect(response.text).toContain("Validacion de catalogo, pruebas sandbox y diagnostico tecnico");
+    expect(response.text).toContain("Actualizacion de precios");
+    expect(response.text).toContain("La actualizacion automatica de precios todavia no esta habilitada");
+    expect(response.text).toContain('<link rel="stylesheet" href="/admin.css" />');
+    expect(response.text).toContain('<script src="/admin.js" defer></script>');
+    expect(response.text).not.toContain("<style");
+    expect(response.text).not.toContain("style=");
+    expect(response.text).not.toContain("<script>");
+    expect(response.text).not.toContain("onclick=");
+    expect(response.text).not.toContain("onload=");
+    expect(response.text).not.toContain("onchange=");
+  });
+
+  it("does not serve admin.html when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/admin.html").expect(404);
+  });
+
   it("serves TPA.css when static files are enabled", async () => {
     const response = await request(createApp({ serveStatic: true })).get("/TPA.css").expect(200);
 
@@ -280,6 +301,41 @@ describe("app security middleware", () => {
 
   it("does not serve TPA.js when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/TPA.js").expect(404);
+  });
+
+  it("serves admin.css when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/admin.css").expect(200);
+
+    expect(response.text).toContain(".login-card");
+    expect(response.text).toContain(".admin-header");
+    expect(response.text).toContain(".future-card");
+    expect(response.text).toContain(".status-pill");
+    expect(response.headers["content-type"]).toContain("text/css");
+  });
+
+  it("serves admin.js when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/admin.js").expect(200);
+
+    expect(response.text).toContain('sessionStorage.getItem(AUTH_STORAGE_KEY)');
+    expect(response.text).toContain('fetch("/api/dev/admin/login"');
+    expect(response.text).toContain('fetch("/api/dev/catalog"');
+    expect(response.text).toContain('fetch("/api/toyota-plan/generate-link"');
+    expect(response.text).toContain("Credenciales invalidas");
+    expect(response.text).toContain("tpa_admin_authenticated");
+    expect(response.text).not.toContain("/api/dev/catalog-sheet");
+    expect(response.text).not.toContain("homfsa3600");
+    expect(response.text).not.toContain("client_secret");
+    expect(response.text).not.toContain("access_token");
+    expect(response.text).not.toContain("client_id");
+    expect(response.text).not.toContain("Authorization: Bearer");
+    expect(response.text).not.toContain("onclick=");
+    expect(response.text).not.toContain("onload=");
+    expect(response.text).not.toContain("onchange=");
+    expect(response.headers["content-type"]).toContain("javascript");
+  });
+
+  it("does not serve admin.js when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/admin.js").expect(404);
   });
 
   it("does not serve test-planes.html when static files are disabled", async () => {
@@ -360,6 +416,56 @@ describe("app security middleware", () => {
     await request(createApp({ serveDevCatalog: false }))
       .get("/api/dev/catalog")
       .set("Origin", "http://localhost:5173")
+      .expect(404);
+  });
+
+  it("authenticates admin login with dev credentials", async () => {
+    const response = await request(createApp({ serveDevCatalog: true }))
+      .post("/api/dev/admin/login")
+      .send({
+        username: env.ADMIN_USERNAME,
+        password: env.ADMIN_PASSWORD
+      })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      success: true
+    });
+  });
+
+  it("rejects invalid admin login credentials", async () => {
+    const response = await request(createApp({ serveDevCatalog: true }))
+      .post("/api/dev/admin/login")
+      .send({
+        username: env.ADMIN_USERNAME,
+        password: "wrong-password"
+      })
+      .expect(401);
+
+    expect(response.body).toEqual({
+      success: false,
+      message: "Credenciales invalidas"
+    });
+  });
+
+  it("does not expose admin login when dev endpoints are disabled", async () => {
+    await request(createApp({ serveDevCatalog: false }))
+      .post("/api/dev/admin/login")
+      .send({
+        username: env.ADMIN_USERNAME,
+        password: env.ADMIN_PASSWORD
+      })
+      .expect(404);
+  });
+
+  it("does not expose admin login in production", async () => {
+    env.NODE_ENV = "production";
+    await request(createApp())
+      .post("/api/dev/admin/login")
+      .send({
+        username: env.ADMIN_USERNAME,
+        password: env.ADMIN_PASSWORD
+      })
       .expect(404);
   });
 

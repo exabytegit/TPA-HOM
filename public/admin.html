@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administracion TPA-HOM</title>
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="login-screen" class="login-screen">
+        <div class="login-card">
+          <p class="eyebrow">Administracion TPA-HOM</p>
+          <h1>Validacion de catalogo, pruebas sandbox y diagnostico tecnico</h1>
+          <p class="login-copy">
+            Acceso interno para development y sandbox. Esta vista no reemplaza seguridad
+            productiva ni expone datos sensibles.
+          </p>
+
+          <form id="login-form" class="login-form">
+            <label>
+              <span>Usuario</span>
+              <input id="username-input" name="username" type="text" autocomplete="username" required />
+            </label>
+            <label>
+              <span>Contrasena</span>
+              <input
+                id="password-input"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button type="submit" class="btn btn-primary">Ingresar</button>
+            <p id="login-feedback" class="feedback" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="admin-screen" class="admin-screen" hidden>
+        <header class="admin-header">
+          <div>
+            <p class="eyebrow">Administracion TPA-HOM</p>
+            <h1>Validacion de catalogo, pruebas sandbox y diagnostico tecnico</h1>
+            <p class="admin-copy">
+              Vista interna para revisar modelos, probar slugs y acompañar el proceso comercial
+              sin mostrar datos sensibles.
+            </p>
+          </div>
+          <button id="logout-button" class="btn btn-secondary" type="button">Cerrar sesion</button>
+        </header>
+
+        <section class="control-panel" aria-labelledby="control-panel-title">
+          <div class="section-heading">
+            <p class="section-kicker">Panel de acciones</p>
+            <h2 id="control-panel-title">Pruebas sandbox y diagnostico tecnico</h2>
+          </div>
+          <div class="toolbar">
+            <button id="test-all-button" class="btn btn-primary" type="button" disabled>Probar todos</button>
+            <button id="reset-button" class="btn btn-secondary" type="button" disabled>
+              Limpiar resultados
+            </button>
+            <span class="meta">Delay secuencial: 500ms</span>
+          </div>
+        </section>
+
+        <section id="catalog-banner" class="banner" aria-live="polite">Cargando catalogo...</section>
+
+        <section class="summary" aria-label="Resumen de resultados">
+          <div class="summary-item"><strong>Total</strong><div id="summary-total">0</div></div>
+          <div class="summary-item"><strong>OK</strong><div id="summary-success">0</div></div>
+          <div class="summary-item"><strong>Fallidos</strong><div id="summary-failed">0</div></div>
+        </section>
+
+        <section class="data-section" aria-labelledby="catalog-title">
+          <div class="section-heading">
+            <p class="section-kicker">Catalogo tecnico</p>
+            <h2 id="catalog-title">Modelos, planes y diagnostico de sandbox</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Slug</th>
+                  <th>Modelo</th>
+                  <th>Plan</th>
+                  <th>Amount</th>
+                  <th>Accion</th>
+                  <th>Estado</th>
+                  <th>HTTP</th>
+                  <th>Code</th>
+                  <th>linkHost</th>
+                  <th>correlationId</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-body">
+                <tr>
+                  <td colspan="11" class="empty">Esperando catalogo...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="future-section" aria-labelledby="future-title">
+          <div class="section-heading">
+            <p class="section-kicker">Actualizacion de precios</p>
+            <h2 id="future-title">Preparada para una etapa posterior</h2>
+          </div>
+          <div class="future-card">
+            <p>
+              La actualizacion automatica de precios todavia no esta habilitada. Usar
+              <code>npm run catalog:compare-sheet</code> y <code>npm run smoke:sheet</code>.
+            </p>
+            <button type="button" class="btn btn-secondary" disabled>Actualizacion de precios no disponible</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/admin.js" defer></script>
+  </body>
+</html>
