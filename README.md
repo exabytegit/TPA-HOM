@@ -46,6 +46,7 @@ http://localhost:3000/test-planes.html
 Uso:
 
 - carga el catalogo desde `GET /api/dev/catalog`;
+- puede actualizar los `amount` visibles desde el Google Sheet publico con `Actualizar precios`;
 - ejecuta `POST /api/toyota-plan/generate-link` enviando solo `slug`;
 - agrega `x-correlation-id` por request desde el navegador;
 - muestra `status`, `linkHost`, `correlationId` y mensaje resumido;
@@ -78,6 +79,7 @@ Alcance:
 - `test-planes.html` permite el mismo flujo en formato visual;
 - `test-planes.html` mantiene menos datos tecnicos visibles y deja el diagnostico bajo demanda;
 - si cambia el catalogo, revisar el mapeo local de imagenes por `modelId-planId` en `/test-planes.js`;
+- `test-modelos.html` tiene un boton `Actualizar precios` que consulta el Sheet publico via backend dev-only y actualiza solo la vista en memoria;
 - `/api/dev/catalog` devuelve solo campos seguros del catalogo:
   - `slug`
   - `modelDescription`

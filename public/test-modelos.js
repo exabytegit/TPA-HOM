@@ -5,6 +5,7 @@ let catalog = [];
 
 const catalogBody = document.getElementById("catalog-body");
 const banner = document.getElementById("catalog-banner");
+const updatePricesButton = document.getElementById("update-prices-button");
 const testAllButton = document.getElementById("test-all-button");
 const resetButton = document.getElementById("reset-button");
 const summaryTotal = document.getElementById("summary-total");
@@ -93,6 +94,11 @@ function renderRowState(slug) {
   const rowState = state.get(slug);
   const elements = rowElements.get(slug);
   if (!rowState || !elements) return;
+
+  const row = catalog.find((item) => item.slug === slug);
+  if (row && elements.amount) {
+    elements.amount.textContent = formatAmount(row.amount);
+  }
 
   elements.status.innerHTML = `<span class="status-pill status-${rowState.status}">${statusText[rowState.status]}</span>`;
   elements.httpStatus.textContent = rowState.httpStatus;
@@ -210,6 +216,7 @@ async function runSingleTest(slug) {
 async function runAllSequentially() {
   testAllButton.disabled = true;
   resetButton.disabled = true;
+  updatePricesButton.disabled = true;
   catalog.forEach((item) => renderRowState(item.slug));
 
   try {
@@ -220,6 +227,7 @@ async function runAllSequentially() {
   } finally {
     testAllButton.disabled = false;
     resetButton.disabled = false;
+    updatePricesButton.disabled = catalog.length === 0;
     catalog.forEach((item) => renderRowState(item.slug));
   }
 }
@@ -264,6 +272,7 @@ function buildTable() {
 
     const amountCell = document.createElement("td");
     amountCell.textContent = formatAmount(item.amount);
+    amountCell.textContent = formatAmount(item.amount);
 
     const actionsCell = document.createElement("td");
     const statusCell = document.createElement("td");
@@ -289,6 +298,7 @@ function buildTable() {
     rowElements.set(item.slug, {
       actions: actionsCell,
       status: statusCell,
+      amount: amountCell,
       httpStatus: httpStatusCell,
       code: codeCell,
       linkHost: linkHostCell,
@@ -308,6 +318,7 @@ async function loadCatalog() {
   setBanner("Cargando catalogo de prueba...");
   testAllButton.disabled = true;
   resetButton.disabled = true;
+  updatePricesButton.disabled = true;
 
   try {
     const response = await fetch("/api/dev/catalog", {
@@ -330,10 +341,12 @@ async function loadCatalog() {
     buildTable();
     testAllButton.disabled = catalog.length === 0;
     resetButton.disabled = catalog.length === 0;
+    updatePricesButton.disabled = catalog.length === 0;
     setBanner(`Catalogo cargado: ${catalog.length} modelos disponibles para testing local.`);
   } catch (error) {
     catalog = [];
     buildTable();
+    updatePricesButton.disabled = true;
     setBanner(
       `No se pudo cargar el catalogo local. ${
         error instanceof Error ? error.message : "Error desconocido"
@@ -343,6 +356,64 @@ async function loadCatalog() {
   }
 }
 
+async function updatePricesFromSheet() {
+  updatePricesButton.disabled = true;
+  testAllButton.disabled = true;
+  resetButton.disabled = true;
+  setBanner("Actualizando precios desde Google Sheet...");
+
+  try {
+    const response = await fetch("/api/dev/catalog-sheet", {
+      headers: {
+        "x-correlation-id": createCorrelationId()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} al cargar /api/dev/catalog-sheet`);
+    }
+
+    const sheetRows = await response.json();
+    if (!Array.isArray(sheetRows)) {
+      throw new Error("Respuesta invalida de /api/dev/catalog-sheet");
+    }
+
+    const sheetByKey = new Map(
+      sheetRows.map((row) => [`${String(row.modelId).trim()}-${String(row.planId).trim()}`, row])
+    );
+
+    let updatedCount = 0;
+    catalog.forEach((item) => {
+      const key = `${item.modelId}-${item.planId}`;
+      const sheetRow = sheetByKey.get(key);
+      if (!sheetRow) return;
+
+      const nextAmount = Number(sheetRow.amount);
+      if (!Number.isFinite(nextAmount)) return;
+
+      if (item.amount !== nextAmount) {
+        item.amount = nextAmount;
+        updatedCount += 1;
+      }
+      renderRowState(item.slug);
+    });
+
+    setBanner(`Precios actualizados desde Google Sheet. Filas modificadas: ${updatedCount}.`);
+  } catch (error) {
+    setBanner(
+      `No se pudieron actualizar los precios. ${
+        error instanceof Error ? error.message : "Error desconocido"
+      }`,
+      true
+    );
+  } finally {
+    testAllButton.disabled = catalog.length === 0;
+    resetButton.disabled = catalog.length === 0;
+    updatePricesButton.disabled = catalog.length === 0;
+  }
+}
+
 testAllButton.addEventListener("click", runAllSequentially);
 resetButton.addEventListener("click", resetResults);
+updatePricesButton.addEventListener("click", updatePricesFromSheet);
 loadCatalog();

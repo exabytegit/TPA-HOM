@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
 import request from "supertest";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { env } from "../src/config/env";
 import { createCorsConfig } from "../src/config/corsConfig";
@@ -14,6 +14,7 @@ describe("app security middleware", () => {
 
   afterEach(() => {
     env.NODE_ENV = originalNodeEnv;
+    vi.unstubAllGlobals();
   });
 
   it("returns healthcheck data without external calls", async () => {
@@ -122,6 +123,8 @@ describe("app security middleware", () => {
 
     expect(response.text).toContain("TPA-HOM - Test interno de modelos");
     expect(response.text).toContain('<script src="/test-modelos.js" defer></script>');
+    expect(response.text).toContain("Actualizar precios");
+    expect(response.text).toContain('id="update-prices-button"');
     expect(response.text).not.toContain("<script>");
     expect(response.text).not.toContain("onclick=");
     expect(response.text).not.toContain("onload=");
@@ -136,12 +139,52 @@ describe("app security middleware", () => {
     const response = await request(createApp({ serveStatic: true })).get("/test-modelos.js").expect(200);
 
     expect(response.text).toContain('fetch("/api/dev/catalog"');
+    expect(response.text).toContain('fetch("/api/dev/catalog-sheet"');
+    expect(response.text).toContain('updatePricesFromSheet');
     expect(response.text).toContain('addEventListener("click", runAllSequentially)');
     expect(response.headers["content-type"]).toContain("javascript");
   });
 
   it("does not serve test-modelos.js when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/test-modelos.js").expect(404);
+  });
+
+  it("serves development catalog sheet data when enabled", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        text: async () =>
+          [
+            "ID MOD,DESC MODELO,ID PLAN,DESC PLAN,AMOUNT",
+            '114,"HILUX 4X4 D/C DX 2.4 TDI 6 A/T",113,"PLAN 100% DIF G 84M","$ 558.824,14"'
+          ].join("\n")
+      }))
+    );
+
+    const response = await request(createApp({ serveDevCatalog: true }))
+      .get("/api/dev/catalog-sheet")
+      .set("Origin", "http://localhost:5173")
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+    expect(response.body[0]).toMatchObject({
+      modelId: expect.any(String),
+      modelDescription: expect.any(String),
+      planId: expect.any(String),
+      planDescription: expect.any(String),
+      amount: expect.any(Number)
+    });
+  });
+
+  it("does not serve development catalog sheet data when disabled", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+
+    await request(createApp({ serveDevCatalog: false }))
+      .get("/api/dev/catalog-sheet")
+      .set("Origin", "http://localhost:5173")
+      .expect(404);
   });
 
   it("serves test-planes.html when static files are enabled", async () => {

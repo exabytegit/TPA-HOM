@@ -10,6 +10,7 @@ import { requestLogger } from "./middlewares/requestLogger";
 import { toyotaPlanCatalogService } from "./modules/toyotaPlan/toyotaPlanCatalog.service";
 import { toyotaPlanRouter } from "./modules/toyotaPlan/toyotaPlan.routes";
 import { renderMetrics } from "./utils/metrics";
+import { fetchToyotaPlanSheetRows } from "./utils/toyotaPlanSheet";
 
 export const createApp = (options?: {
   enableMetrics?: boolean;
@@ -46,6 +47,15 @@ export const createApp = (options?: {
           planId: item.planId
         }))
       );
+    });
+
+    app.get("/api/dev/catalog-sheet", async (_req, res, next) => {
+      try {
+        const rows = await fetchToyotaPlanSheetRows();
+        res.json(rows);
+      } catch (error) {
+        next(error);
+      }
     });
   }
 
