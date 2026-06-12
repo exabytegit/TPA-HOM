@@ -104,8 +104,12 @@ Alcance:
   `test-modelos.html`, pero `test-modelos.html` se mantiene por compatibilidad temporal;
 - `admin.html` requiere autenticacion simple contra `POST /api/dev/admin/login` con credenciales
   cargadas desde `.env` (`ADMIN_USERNAME`, `ADMIN_PASSWORD`);
+- `admin.html` usa una sesion admin en memoria (`x-admin-session`) para autorizar
+  `Actualizar precios desde Sheet`; esa accion solo cambia `amount` y crea backup cuando
+  hay diferencias;
 - si cambia el catalogo, revisar el mapeo local de imagenes por `modelId-planId` en `/test-planes.js`;
 - `test-modelos.html` tiene un boton `Actualizar precios` que consulta el Sheet publico via backend dev-only y actualiza solo la vista en memoria;
+- `admin.html` tiene un boton `Actualizar precios desde Sheet` que usa una sesion admin en memoria y actualiza solo los `amount` del catalogo local, creando backup cuando hay cambios;
 - `/api/dev/catalog` devuelve solo campos seguros del catalogo:
   - `slug`
   - `modelDescription`
@@ -118,7 +122,8 @@ Alcance:
 - no expone tokens, `client_secret`, headers `Authorization` ni links completos.
 - ambas UIs (`test-modelos.html` y `test-planes.html`) envian solo `slug` a `POST /api/toyota-plan/generate-link`.
 - `admin.html` conserva el flujo tecnico de prueba y agrega una seccion visual de
-  "Actualizacion de precios" que por ahora no escribe catalogo.
+  "Actualizacion de precios" para sincronizar solo `amount` desde el Sheet publico en
+  development/sandbox.
 - la UI local clasifica errores de sandbox en:
   - `Error catálogo TPA`
   - `Error Toyota transitorio`

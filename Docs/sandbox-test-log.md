@@ -1,5 +1,30 @@
 # Sandbox Test Log
 
+## v0.5.9 - Actualizacion admin de importes desde Sheet
+
+### Fecha
+
+2026-06-12
+
+### Resultado
+
+Se agrego en `admin.html` un flujo dev-only para actualizar solo los `amount` del catalogo
+local desde el Sheet publico, protegido por una sesion admin en memoria y con backup previo
+cuando hay cambios.
+
+### Confirmaciones
+
+- `POST /api/dev/admin/login` devuelve una sesion admin temporal en memoria;
+- `POST /api/dev/admin/catalog/update-amounts-from-sheet` exige `x-admin-session`;
+- la actualizacion solo modifica `amount` y no toca `slug`, `modelId`, `planId` ni `seller`;
+- cuando hay cambios se crea backup en `src/config/backups/`;
+- cuando no hay diferencias no se escribe el catalogo;
+- la UI muestra el resultado sin exponer tokens, `Authorization`, `client_secret` ni links
+  completos;
+- sigue siendo una funcionalidad solo para `development/sandbox`.
+
+---
+
 ## v0.5.8 - Administracion interna con login simple
 
 ### Fecha

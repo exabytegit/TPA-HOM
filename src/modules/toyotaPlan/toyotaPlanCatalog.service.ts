@@ -14,6 +14,10 @@ export class ToyotaPlanCatalogService {
     return [...this.catalog];
   }
 
+  replaceCatalog(rawCatalog: unknown): void {
+    this.catalog.splice(0, this.catalog.length, ...catalogSchema.parse(rawCatalog));
+  }
+
   findCatalogItemBySlug(slug: string): ToyotaPlanCatalogItem | undefined {
     return this.catalog.find((item) => item.slug === slug);
   }

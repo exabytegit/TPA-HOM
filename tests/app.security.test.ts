@@ -243,8 +243,15 @@ describe("app security middleware", () => {
 
     expect(response.text).toContain("Administracion TPA-HOM");
     expect(response.text).toContain("Validacion de catalogo, pruebas sandbox y diagnostico tecnico");
-    expect(response.text).toContain("Actualizacion de precios");
-    expect(response.text).toContain("La actualizacion automatica de precios todavia no esta habilitada");
+    expect(response.text).toContain("Catálogo Toyota Plan");
+    expect(response.text).toContain("Estado del catálogo");
+    expect(response.text).toContain("Herramientas disponibles");
+    expect(response.text).toContain("Fuente de datos");
+    expect(response.text).toContain("Roadmap");
+    expect(response.text).toContain("Actualizar precios desde Sheet");
+    expect(response.text).toContain("Información técnica");
+    expect(response.text).toContain("Google Sheet público configurado");
+    expect(response.text).toContain("Función disponible por línea de comandos.");
     expect(response.text).toContain('<link rel="stylesheet" href="/admin.css" />');
     expect(response.text).toContain('<script src="/admin.js" defer></script>');
     expect(response.text).not.toContain("<style");
@@ -308,8 +315,13 @@ describe("app security middleware", () => {
 
     expect(response.text).toContain(".login-card");
     expect(response.text).toContain(".admin-header");
-    expect(response.text).toContain(".future-card");
+    expect(response.text).toContain(".catalog-dashboard");
+    expect(response.text).toContain(".dashboard-card");
+    expect(response.text).toContain(".technical-accordion");
     expect(response.text).toContain(".status-pill");
+    expect(response.text).toContain(".update-panel");
+    expect(response.text).toContain(".update-summary-grid");
+    expect(response.text).toContain(".btn-accent");
     expect(response.headers["content-type"]).toContain("text/css");
   });
 
@@ -320,8 +332,11 @@ describe("app security middleware", () => {
     expect(response.text).toContain('fetch("/api/dev/admin/login"');
     expect(response.text).toContain('fetch("/api/dev/catalog"');
     expect(response.text).toContain('fetch("/api/toyota-plan/generate-link"');
+    expect(response.text).toContain('fetch("/api/dev/admin/catalog/update-amounts-from-sheet"');
+    expect(response.text).toContain('"x-admin-session": token');
     expect(response.text).toContain("Credenciales invalidas");
     expect(response.text).toContain("tpa_admin_authenticated");
+    expect(response.text).toContain("tpa_admin_session_token");
     expect(response.text).not.toContain("/api/dev/catalog-sheet");
     expect(response.text).not.toContain("homfsa3600");
     expect(response.text).not.toContain("client_secret");
@@ -428,8 +443,9 @@ describe("app security middleware", () => {
       })
       .expect(200);
 
-    expect(response.body).toEqual({
-      success: true
+    expect(response.body).toMatchObject({
+      success: true,
+      adminSessionToken: expect.any(String)
     });
   });
 

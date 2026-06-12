@@ -21,12 +21,109 @@ Endpoints y utilidades solo para `development/sandbox` local:
 
 - `GET /test-modelos.html`
 - `GET /api/dev/catalog`
+- `GET /admin.html`
+- `POST /api/dev/admin/login`
+- `POST /api/dev/admin/catalog/update-amounts-from-sheet`
 
 Condiciones:
 
-- ambos existen solo cuando `NODE_ENV !== "production"`;
+- estos endpoints existen solo cuando `NODE_ENV !== "production"`;
 - en producción deben quedar fuera de servicio;
 - no reemplazan el smoke test manual `npm run smoke:sandbox`.
+
+### POST /api/dev/admin/login
+
+Descripcion:
+
+- valida credenciales de desarrollo y devuelve una sesion admin temporal en memoria.
+
+Request body:
+
+```json
+{
+  "username": "homu",
+  "password": "change_me_local"
+}
+```
+
+Response 200:
+
+```json
+{
+  "success": true,
+  "adminSessionToken": "admin-session-token"
+}
+```
+
+Headers relevantes:
+
+- `content-type: application/json`
+- `x-correlation-id` opcional
+
+### POST /api/dev/admin/catalog/update-amounts-from-sheet
+
+Descripcion:
+
+- sincroniza solo el campo `amount` del catalogo local contra el Sheet publico;
+- requiere `x-admin-session`;
+- crea backup antes de escribir cuando hay cambios;
+- no modifica `slug`, `modelId`, `planId` ni `seller`.
+
+Request headers:
+
+- `content-type: application/json`
+- `x-admin-session`
+- `x-correlation-id` opcional
+
+Response 200:
+
+```json
+{
+  "success": true,
+  "updatedCount": 1,
+  "unchangedCount": 8,
+  "sheetOnlyCount": 0,
+  "catalogOnlyCount": 0,
+  "backupCreated": true,
+  "reportPath": "Docs/catalog-update-report.md",
+  "message": "Catalogo actualizado desde el Sheet publico.",
+  "changes": [
+    {
+      "modelId": "111",
+      "planId": "113",
+      "oldAmount": 639161.64,
+      "newAmount": 639398,
+      "slug": "hiace-furgon-l2h2-28-tdi-at-plan-100"
+    }
+  ]
+}
+```
+
+Si no hay diferencias:
+
+```json
+{
+  "success": true,
+  "updatedCount": 0,
+  "unchangedCount": 9,
+  "sheetOnlyCount": 0,
+  "catalogOnlyCount": 0,
+  "backupCreated": false,
+  "reportPath": "Docs/catalog-update-report.md",
+  "message": "El catálogo ya está sincronizado con el Sheet.",
+  "changes": []
+}
+```
+
+Si falta la sesion:
+
+```json
+{
+  "success": false,
+  "message": "Sesion admin invalida",
+  "code": "ADMIN_SESSION_INVALID"
+}
+```
 
 ### GET /api/dev/catalog
 

@@ -8,10 +8,13 @@ import { toyotaPlanConfig } from "./config/toyotaPlanConfig";
 import { correlationIdMiddleware } from "./middlewares/correlationId";
 import { errorHandler } from "./middlewares/errorHandler";
 import { requestLogger } from "./middlewares/requestLogger";
+import { createAdminSession, validateAdminSession } from "./modules/admin/adminSession.service";
 import { toyotaPlanCatalogService } from "./modules/toyotaPlan/toyotaPlanCatalog.service";
+import { updateCatalogAmountsFromSheet } from "./modules/toyotaPlan/toyotaPlanCatalogUpdate.service";
 import { toyotaPlanRouter } from "./modules/toyotaPlan/toyotaPlan.routes";
 import { renderMetrics } from "./utils/metrics";
 import { fetchToyotaPlanSheetRows } from "./utils/toyotaPlanSheet";
+import { logger } from "./utils/logger";
 
 export const createApp = (options?: {
   enableMetrics?: boolean;
@@ -83,9 +86,50 @@ export const createApp = (options?: {
         return;
       }
 
-      res.json({
-        success: true
+      const adminSessionToken = createAdminSession();
+      logger.info("Admin login success", {
+        username
       });
+
+      res.json({
+        success: true,
+        adminSessionToken
+      });
+    });
+
+    app.post("/api/dev/admin/catalog/update-amounts-from-sheet", async (req, res, next) => {
+      try {
+        const adminSessionToken = req.get("x-admin-session") ?? undefined;
+
+        if (!validateAdminSession(adminSessionToken)) {
+          res.status(401).json({
+            success: false,
+            message: "Sesion admin invalida",
+            code: "ADMIN_SESSION_INVALID"
+          });
+          return;
+        }
+
+        logger.info("Admin catalog update requested", {
+          route: "/api/dev/admin/catalog/update-amounts-from-sheet"
+        });
+
+        const result = await updateCatalogAmountsFromSheet();
+
+        res.json({
+          success: true,
+          updatedCount: result.updatedCount,
+          unchangedCount: result.unchangedCount,
+          sheetOnlyCount: result.sheetOnlyCount,
+          catalogOnlyCount: result.catalogOnlyCount,
+          backupCreated: result.backupCreated,
+          reportPath: result.reportPath,
+          message: result.message,
+          changes: result.changes
+        });
+      } catch (error) {
+        next(error);
+      }
     });
   }
 

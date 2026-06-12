@@ -58,6 +58,9 @@
           </div>
           <div class="toolbar">
             <button id="test-all-button" class="btn btn-primary" type="button" disabled>Probar todos</button>
+            <button id="update-prices-button" class="btn btn-accent" type="button" disabled>
+              Actualizar precios desde Sheet
+            </button>
             <button id="reset-button" class="btn btn-secondary" type="button" disabled>
               Limpiar resultados
             </button>
@@ -66,6 +69,50 @@
         </section>
 
         <section id="catalog-banner" class="banner" aria-live="polite">Cargando catalogo...</section>
+
+        <section class="update-panel" aria-labelledby="update-panel-title">
+          <div class="section-heading">
+            <p class="section-kicker">Sincronizacion del catalogo</p>
+            <h2 id="update-panel-title">Actualizar importes desde el Sheet publico</h2>
+          </div>
+          <p class="update-copy">
+            Este paso actualiza solo el campo amount del catalogo local. No modifica slug,
+            modelId, planId ni seller.
+          </p>
+          <div class="update-actions">
+            <button id="update-prices-button-secondary" class="btn btn-accent" type="button" disabled>
+              Actualizar precios desde Sheet
+            </button>
+            <span class="meta">Se crea backup antes de escribir cuando hay cambios.</span>
+          </div>
+          <div id="update-feedback" class="banner update-banner" aria-live="polite">
+            Esperando validacion del catalogo...
+          </div>
+          <div class="update-summary-grid" aria-label="Resumen de sincronizacion">
+            <div class="summary-item"><strong>Actualizados</strong><div id="update-updated">0</div></div>
+            <div class="summary-item"><strong>Sin cambios</strong><div id="update-unchanged">0</div></div>
+            <div class="summary-item"><strong>Solo Sheet</strong><div id="update-sheet-only">0</div></div>
+            <div class="summary-item"><strong>Solo Catalogo</strong><div id="update-catalog-only">0</div></div>
+          </div>
+          <div class="table-wrap update-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>modelId</th>
+                  <th>planId</th>
+                  <th>Slug</th>
+                  <th>Amount anterior</th>
+                  <th>Amount nuevo</th>
+                </tr>
+              </thead>
+              <tbody id="update-changes-body">
+                <tr>
+                  <td colspan="5" class="empty">Sin cambios para mostrar.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section class="summary" aria-label="Resumen de resultados">
           <div class="summary-item"><strong>Total</strong><div id="summary-total">0</div></div>
@@ -106,16 +153,76 @@
 
         <section class="future-section" aria-labelledby="future-title">
           <div class="section-heading">
-            <p class="section-kicker">Actualizacion de precios</p>
-            <h2 id="future-title">Preparada para una etapa posterior</h2>
+            <p class="section-kicker">Catálogo Toyota Plan</p>
+            <h2 id="future-title">Estado, herramientas y roadmap del catálogo</h2>
           </div>
-          <div class="future-card">
-            <p>
-              La actualizacion automatica de precios todavia no esta habilitada. Usar
-              <code>npm run catalog:compare-sheet</code> y <code>npm run smoke:sheet</code>.
-            </p>
-            <button type="button" class="btn btn-secondary" disabled>Actualizacion de precios no disponible</button>
+
+          <div class="catalog-dashboard">
+            <article class="dashboard-card dashboard-status">
+              <h3>Estado del catálogo</h3>
+              <ul class="status-list">
+                <li>✓ Catálogo cargado</li>
+                <li>✓ Google Sheet configurado</li>
+                <li>✓ Comparación automática disponible</li>
+                <li>✓ Smoke test disponible</li>
+              </ul>
+            </article>
+
+            <article class="dashboard-card">
+              <h3>Herramientas disponibles</h3>
+              <div class="tool-grid" aria-label="Herramientas disponibles">
+                <button type="button" class="tool-chip" disabled>Comparar catálogo</button>
+                <button type="button" class="tool-chip" disabled>Ejecutar smoke test</button>
+                <button type="button" class="tool-chip" disabled>Ver último reporte</button>
+                <button type="button" class="tool-chip" disabled>Estado del catálogo</button>
+              </div>
+              <p class="helper-copy">Función disponible por línea de comandos.</p>
+            </article>
+
+            <article class="dashboard-card">
+              <h3>Fuente de datos</h3>
+              <p class="source-highlight">Google Sheet público configurado</p>
+              <dl class="source-list">
+                <div>
+                  <dt>Origen de precios</dt>
+                  <dd>Sheet público de Toyota Plan</dd>
+                </div>
+                <div>
+                  <dt>Modelos catalogados</dt>
+                  <dd id="catalog-count">0</dd>
+                </div>
+                <div>
+                  <dt>Nota</dt>
+                  <dd>La UI lee datos validados desde el backend dev-only.</dd>
+                </div>
+              </dl>
+            </article>
+
+            <article class="dashboard-card">
+              <h3>Roadmap</h3>
+              <ul class="roadmap-list">
+                <li>□ Actualización automática desde Sheet</li>
+                <li>□ Historial de cambios</li>
+                <li>□ Auditoría de precios</li>
+                <li>□ Exportación de reportes</li>
+              </ul>
+            </article>
           </div>
+
+          <details class="technical-accordion">
+            <summary>Información técnica</summary>
+            <div class="technical-body">
+              <p>
+                La actualización automática de precios no escribe catálogo. Para operaciones
+                manuales de validación se siguen usando los reportes generados por línea de
+                comandos.
+              </p>
+              <ul>
+                <li><code>npm run catalog:compare-sheet</code></li>
+                <li><code>npm run smoke:sheet</code></li>
+              </ul>
+            </div>
+          </details>
         </section>
       </section>
     </main>

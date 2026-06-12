@@ -1,4 +1,5 @@
 const AUTH_STORAGE_KEY = "tpa_admin_authenticated";
+const SESSION_TOKEN_STORAGE_KEY = "tpa_admin_session_token";
 const delayMs = 500;
 
 const loginScreen = document.getElementById("login-screen");
@@ -11,10 +12,19 @@ const logoutButton = document.getElementById("logout-button");
 const catalogBody = document.getElementById("catalog-body");
 const banner = document.getElementById("catalog-banner");
 const testAllButton = document.getElementById("test-all-button");
+const updatePricesButton = document.getElementById("update-prices-button");
+const updatePricesButtonSecondary = document.getElementById("update-prices-button-secondary");
 const resetButton = document.getElementById("reset-button");
 const summaryTotal = document.getElementById("summary-total");
 const summarySuccess = document.getElementById("summary-success");
 const summaryFailed = document.getElementById("summary-failed");
+const catalogCount = document.getElementById("catalog-count");
+const updateFeedback = document.getElementById("update-feedback");
+const updateUpdated = document.getElementById("update-updated");
+const updateUnchanged = document.getElementById("update-unchanged");
+const updateSheetOnly = document.getElementById("update-sheet-only");
+const updateCatalogOnly = document.getElementById("update-catalog-only");
+const updateChangesBody = document.getElementById("update-changes-body");
 
 const state = new Map();
 const rowElements = new Map();
@@ -69,6 +79,80 @@ function setBanner(message, isError = false) {
   banner.className = isError ? "banner error" : "banner";
 }
 
+function setUpdateFeedback(message, isError = false) {
+  if (!(updateFeedback instanceof HTMLElement)) return;
+  updateFeedback.textContent = message;
+  updateFeedback.className = isError ? "banner update-banner error" : "banner update-banner";
+}
+
+function setUpdateSummary(result) {
+  if (updateUpdated instanceof HTMLElement) {
+    updateUpdated.textContent = String(result?.updatedCount ?? 0);
+  }
+  if (updateUnchanged instanceof HTMLElement) {
+    updateUnchanged.textContent = String(result?.unchangedCount ?? 0);
+  }
+  if (updateSheetOnly instanceof HTMLElement) {
+    updateSheetOnly.textContent = String(result?.sheetOnlyCount ?? 0);
+  }
+  if (updateCatalogOnly instanceof HTMLElement) {
+    updateCatalogOnly.textContent = String(result?.catalogOnlyCount ?? 0);
+  }
+}
+
+function renderUpdateChanges(changes) {
+  if (!(updateChangesBody instanceof HTMLElement)) return;
+
+  updateChangesBody.replaceChildren();
+
+  if (!Array.isArray(changes) || changes.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 5;
+    cell.className = "empty";
+    cell.textContent = "Sin cambios para mostrar.";
+    row.appendChild(cell);
+    updateChangesBody.appendChild(row);
+    return;
+  }
+
+  changes.forEach((change) => {
+    const row = document.createElement("tr");
+    const modelIdCell = document.createElement("td");
+    modelIdCell.textContent = String(change.modelId ?? "-");
+    const planIdCell = document.createElement("td");
+    planIdCell.textContent = String(change.planId ?? "-");
+    const slugCell = document.createElement("td");
+    slugCell.textContent = String(change.slug ?? "-");
+    const oldAmountCell = document.createElement("td");
+    oldAmountCell.textContent = formatAmount(Number(change.oldAmount ?? 0));
+    const newAmountCell = document.createElement("td");
+    newAmountCell.textContent = formatAmount(Number(change.newAmount ?? 0));
+
+    row.appendChild(modelIdCell);
+    row.appendChild(planIdCell);
+    row.appendChild(slugCell);
+    row.appendChild(oldAmountCell);
+    row.appendChild(newAmountCell);
+    updateChangesBody.appendChild(row);
+  });
+}
+
+function setAdminActionsDisabled(disabled) {
+  if (testAllButton instanceof HTMLButtonElement) {
+    testAllButton.disabled = disabled || catalog.length === 0;
+  }
+  if (resetButton instanceof HTMLButtonElement) {
+    resetButton.disabled = disabled || catalog.length === 0;
+  }
+  if (updatePricesButton instanceof HTMLButtonElement) {
+    updatePricesButton.disabled = disabled;
+  }
+  if (updatePricesButtonSecondary instanceof HTMLButtonElement) {
+    updatePricesButtonSecondary.disabled = disabled;
+  }
+}
+
 function updateSummary() {
   let success = 0;
   let failed = 0;
@@ -89,6 +173,9 @@ function updateSummary() {
   summaryTotal.textContent = String(catalog.length);
   summarySuccess.textContent = String(success);
   summaryFailed.textContent = String(failed);
+  if (catalogCount instanceof HTMLElement) {
+    catalogCount.textContent = String(catalog.length);
+  }
 }
 
 function renderActions(slug, rowState, actionsCell) {
@@ -230,8 +317,7 @@ async function runSingleTest(slug) {
 }
 
 async function runAllSequentially() {
-  testAllButton.disabled = true;
-  resetButton.disabled = true;
+  setAdminActionsDisabled(true);
   catalog.forEach((item) => renderRowState(item.slug));
 
   try {
@@ -240,8 +326,7 @@ async function runAllSequentially() {
       await sleep(delayMs);
     }
   } finally {
-    testAllButton.disabled = catalog.length === 0;
-    resetButton.disabled = catalog.length === 0;
+    setAdminActionsDisabled(catalog.length === 0);
     catalog.forEach((item) => renderRowState(item.slug));
   }
 }
@@ -251,6 +336,84 @@ function resetResults() {
     state.set(item.slug, initialRowState());
     renderRowState(item.slug);
   });
+}
+
+function getAdminSessionToken() {
+  const token = sessionStorage.getItem(SESSION_TOKEN_STORAGE_KEY);
+  return typeof token === "string" && token.trim() !== "" ? token : null;
+}
+
+async function updatePricesFromSheet() {
+  const token = getAdminSessionToken();
+  if (!token) {
+    setUpdateFeedback("Sesion admin invalida. Volve a iniciar sesion.", true);
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Esto actualiza solo los importes amount del catalogo local desde el Sheet publico. \n" +
+      "Se creara un backup si hay cambios. Deseas continuar?"
+  );
+
+  if (!confirmed) {
+    setUpdateFeedback("Actualizacion cancelada por el usuario.");
+    setAdminActionsDisabled(catalog.length === 0);
+    catalog.forEach((item) => renderRowState(item.slug));
+    return;
+  }
+
+  setAdminActionsDisabled(true);
+  catalog.forEach((item) => renderRowState(item.slug));
+  setUpdateFeedback("Actualizando precios desde Sheet...");
+
+  try {
+    const response = await fetch("/api/dev/admin/catalog/update-amounts-from-sheet", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-session": token,
+        "x-correlation-id": createCorrelationId()
+      }
+    });
+
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok || body.success !== true) {
+      const message = typeof body.message === "string" ? body.message : `HTTP ${response.status}`;
+      setUpdateFeedback(`No se pudo actualizar el catalogo. ${message}`, true);
+      if (response.status === 401) {
+        clearSessionAndReset();
+      } else {
+        setAdminActionsDisabled(false);
+      }
+      return;
+    }
+
+    setUpdateSummary(body);
+    renderUpdateChanges(body.changes);
+
+    if (body.updatedCount > 0) {
+      setUpdateFeedback(
+        `Catalogo actualizado correctamente. ${body.updatedCount} importe(s) cambiaron. Backup: ${
+          body.backupCreated ? "si" : "no"
+        }. Reporte: ${body.reportPath}.`
+      );
+    } else {
+      setUpdateFeedback("El catalogo ya esta sincronizado con el Sheet.");
+    }
+
+    await loadCatalog();
+  } catch (error) {
+    setUpdateFeedback(
+      `No se pudo actualizar el catalogo. ${
+        error instanceof Error ? error.message : "Error desconocido"
+      }`,
+      true
+    );
+  } finally {
+    setAdminActionsDisabled(catalog.length === 0);
+    catalog.forEach((item) => renderRowState(item.slug));
+  }
 }
 
 function buildTable() {
@@ -330,8 +493,7 @@ function buildTable() {
 async function loadCatalog() {
   const correlationId = createCorrelationId();
   setBanner("Cargando catalogo...");
-  testAllButton.disabled = true;
-  resetButton.disabled = true;
+  setAdminActionsDisabled(true);
 
   try {
     const response = await fetch("/api/dev/catalog", {
@@ -352,8 +514,7 @@ async function loadCatalog() {
 
     catalog = body;
     buildTable();
-    testAllButton.disabled = catalog.length === 0;
-    resetButton.disabled = catalog.length === 0;
+    setAdminActionsDisabled(catalog.length === 0);
     setBanner(`Catalogo cargado: ${catalog.length} modelos disponibles para testing local.`);
   } catch (error) {
     catalog = [];
@@ -367,12 +528,21 @@ async function loadCatalog() {
 
 function clearSessionAndReset() {
   sessionStorage.removeItem(AUTH_STORAGE_KEY);
+  sessionStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
   catalog = [];
   state.clear();
   rowElements.clear();
   if (passwordInput instanceof HTMLInputElement) {
     passwordInput.value = "";
   }
+  setUpdateSummary({
+    updatedCount: 0,
+    unchangedCount: 0,
+    sheetOnlyCount: 0,
+    catalogOnlyCount: 0
+  });
+  renderUpdateChanges([]);
+  setUpdateFeedback("Esperando validacion del catalogo...");
   buildTable();
   setBanner("Sesion cerrada. Vuelve a ingresar para continuar.");
   showLogin();
@@ -402,6 +572,11 @@ async function handleLogin(event) {
     }
 
     sessionStorage.setItem(AUTH_STORAGE_KEY, "true");
+    if (typeof body.adminSessionToken === "string" && body.adminSessionToken.trim() !== "") {
+      sessionStorage.setItem(SESSION_TOKEN_STORAGE_KEY, body.adminSessionToken);
+    } else {
+      sessionStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
+    }
     if (passwordInput instanceof HTMLInputElement) {
       passwordInput.value = "";
     }
@@ -413,10 +588,12 @@ async function handleLogin(event) {
 }
 
 function boot() {
-  if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "true") {
+  if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "true" && getAdminSessionToken()) {
     showAdmin();
     loadCatalog();
   } else {
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
     showLogin();
   }
 
@@ -424,6 +601,12 @@ function boot() {
   logoutButton.addEventListener("click", clearSessionAndReset);
   testAllButton.addEventListener("click", runAllSequentially);
   resetButton.addEventListener("click", resetResults);
+  if (updatePricesButton instanceof HTMLButtonElement) {
+    updatePricesButton.addEventListener("click", updatePricesFromSheet);
+  }
+  if (updatePricesButtonSecondary instanceof HTMLButtonElement) {
+    updatePricesButtonSecondary.addEventListener("click", updatePricesFromSheet);
+  }
 }
 
 boot();

@@ -66,6 +66,7 @@ Herramientas internas disponibles solo fuera de produccion:
 - `GET /api/dev/catalog`
 - `GET /api/dev/catalog-sheet`
 - `POST /api/dev/admin/login`
+- `POST /api/dev/admin/catalog/update-amounts-from-sheet`
 
 Reglas:
 
@@ -81,6 +82,8 @@ Seguridad:
 
 - `/api/dev/catalog` expone solo campos seguros del catalogo;
 - `/api/dev/admin/login` solo valida credenciales de desarrollo y devuelve 401 generico ante error;
+- `/api/dev/admin/catalog/update-amounts-from-sheet` exige `x-admin-session`, actualiza solo
+  `amount`, crea backup cuando hay cambios y devuelve 401 si la sesion no es valida;
 - no expone tokens, `client_secret`, headers `Authorization` ni links completos;
 - `test-modelos.html` es solo una ayuda manual de testing local;
 - `admin.html` es la nueva vista interna con login simple para development/sandbox;
@@ -97,6 +100,7 @@ Seguridad:
 7. `GET /admin.html` no responde en produccion.
 8. `GET /api/dev/catalog` no responde en produccion.
 9. `POST /api/dev/admin/login` no responde en produccion.
+10. `POST /api/dev/admin/catalog/update-amounts-from-sheet` no responde en produccion.
 
 ## Smoke sandbox
 
