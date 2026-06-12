@@ -43,6 +43,12 @@ Tambien hay una vista visual tipo landing/cards para testing manual:
 http://localhost:3000/test-planes.html
 ```
 
+Y una vista comercial mas limpia para prueba de suscripcion:
+
+```txt
+http://localhost:3000/TPA.html
+```
+
 Uso:
 
 - carga el catalogo desde `GET /api/dev/catalog`;
@@ -53,6 +59,10 @@ Uso:
 - permite abrir el link sandbox en otra pestaña sin dejar el link completo visible en pantalla.
 
 - usa JavaScript externo (`/test-modelos.js`) para respetar CSP/Helmet sin relajar seguridad.
+- `TPA.html` usa JavaScript y CSS externos (`/TPA.js`, `/TPA.css`) y mantiene una interfaz mas
+  comercial, sin diagnostico tecnico visible en la vista principal.
+- `TPA.html` fue refinada como una landing comercial premium con hero, beneficios, pasos,
+  cards y FAQ, pensada para usuarios finales y no para lectura tecnica.
 
 Importante:
 
@@ -64,6 +74,9 @@ Importante:
 - `test-planes.html` ofrece la misma validacion con una vista visual de planes (cards).
 - la vista visual muestra cards compactas, cuota de adhesion, botones comerciales y diagnostico colapsable.
 - `test-planes.html` usa imagenes locales desde `public/Images`; no hotlinkea assets externos.
+- `TPA.html` es la vista comercial de referencia para prueba manual: muestra cards mas limpias,
+  abre la suscripcion online en una pestaña nueva al confirmar exito y no expone campos tecnicos
+  en pantalla.
 
 ## Dev-only testing tools
 

@@ -1,5 +1,51 @@
 # Sandbox Test Log
 
+## v0.5.7 - Refinamiento visual premium de TPA
+
+### Fecha
+
+2026-06-12
+
+### Resultado
+
+Se refino `TPA.html` como landing comercial premium para usuarios finales, con hero mas
+fuerte, banda de beneficios, seccion de proceso, cards mas persuasivas y FAQ breve.
+
+### Confirmaciones
+
+- la vista sigue siendo dev/sandbox local;
+- no se toco backend ni catalogo;
+- no se expone lenguaje tecnico al usuario final;
+- se mantienen los enlaces a `TPA.css` y `TPA.js` externos, sin inline handlers ni styles;
+- el flujo de suscripcion sigue enviando solo `slug` y abriendo la nueva pestaña al exito.
+
+---
+
+## v0.5.6 - Vista comercial TPA para prueba manual
+
+### Fecha
+
+2026-06-12
+
+### Resultado
+
+Se incorporo `TPA.html` como vista comercial limpia para prueba manual de suscripcion online
+en `development/sandbox`, manteniendo `test-modelos.html` y `test-planes.html` como vistas
+de testing interno.
+
+### Confirmaciones
+
+- la pagina usa `TPA.css` y `TPA.js` externos, sin scripts inline ni handlers inline;
+- la vista principal no expone `correlationId`, `modelId`, `planId`, `seller`, `linkHost` ni
+  `upstreamMessage`;
+- al confirmar exito en `Suscripcion Online`, el link sandbox se abre en una pestaña nueva y no
+  se muestra completo en pantalla;
+- la pagina sigue dependiendo de `NODE_ENV !== "production"` para estar disponible;
+- no reemplaza el smoke test ni la validacion tecnica de sandbox;
+- no se documentan tokens, secretos ni links completos.
+
+---
+
 ## v0.5.5 - Evidencia rechazo generalizado sandbox Toyota/TPA
 
 ### Fecha

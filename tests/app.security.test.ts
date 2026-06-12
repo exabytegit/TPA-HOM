@@ -208,6 +208,80 @@ describe("app security middleware", () => {
     expect(response.text).not.toContain("onchange=");
   });
 
+  it("serves TPA.html when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/TPA.html").expect(200);
+
+    expect(response.text).toContain("Planes de Ahorro Toyota");
+    expect(response.text).toContain("Elegi tu Toyota y comenzá tu suscripción online");
+    expect(response.text).toContain("Atención personalizada");
+    expect(response.text).toContain("Proceso simple");
+    expect(response.text).toContain("Concesionario Toyota");
+    expect(response.text).toContain("Una experiencia clara para avanzar con confianza");
+    expect(response.text).toContain("Como funciona");
+    expect(response.text).toContain("Preguntas frecuentes");
+    expect(response.text).toContain('<link rel="stylesheet" href="/TPA.css" />');
+    expect(response.text).toContain('<script src="/TPA.js" defer></script>');
+    expect(response.text).not.toContain("correlationId");
+    expect(response.text).not.toContain("modelId");
+    expect(response.text).not.toContain("planId");
+    expect(response.text).not.toContain("seller");
+    expect(response.text).not.toContain("linkHost");
+    expect(response.text).not.toContain("upstreamMessage");
+    expect(response.text).not.toContain("<script>");
+    expect(response.text).not.toContain("style=");
+    expect(response.text).not.toContain("onclick=");
+    expect(response.text).not.toContain("onload=");
+    expect(response.text).not.toContain("onchange=");
+  });
+
+  it("does not serve TPA.html when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/TPA.html").expect(404);
+  });
+
+  it("serves TPA.css when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/TPA.css").expect(200);
+
+    expect(response.text).toContain(".plan-card");
+    expect(response.text).toContain(".vehicle-image");
+    expect(response.text).toContain(".details-panel");
+    expect(response.text).toContain(".status-pill");
+    expect(response.text).toContain(".trust-badge");
+    expect(response.text).toContain(".benefit-card");
+    expect(response.text).toContain(".step-card");
+    expect(response.text).toContain(".faq-item");
+    expect(response.headers["content-type"]).toContain("text/css");
+  });
+
+  it("serves TPA.js when static files are enabled", async () => {
+    const response = await request(createApp({ serveStatic: true })).get("/TPA.js").expect(200);
+
+    expect(response.text).toContain('fetch("/api/dev/catalog"');
+    expect(response.text).toContain('fetch("/api/toyota-plan/generate-link"');
+    expect(response.text).toContain('window.open(body.link, "_blank", "noopener,noreferrer")');
+    expect(response.text).toContain("vehicleImagesByModelPlan");
+    expect(response.text).toContain("Iniciar suscripcion online");
+    expect(response.text).toContain("Hablar con un asesor");
+    expect(response.text).toContain("Ver detalles del plan");
+    expect(response.text).toContain("Preparando tu suscripcion...");
+    expect(response.text).toContain("Suscripcion lista. Abrimos el siguiente paso en una nueva pestaña.");
+    expect(response.text).not.toContain("Abrir link sandbox");
+    expect(response.text).not.toContain("correlationId");
+    expect(response.text).not.toContain("linkHost");
+    expect(response.text).not.toContain("upstreamMessage");
+    expect(response.text).not.toContain("client_secret");
+    expect(response.text).not.toContain("access_token");
+    expect(response.text).not.toContain("client_id");
+    expect(response.text).not.toContain("Authorization: Bearer");
+    expect(response.text).not.toContain("onclick=");
+    expect(response.text).not.toContain("onload=");
+    expect(response.text).not.toContain("onchange=");
+    expect(response.headers["content-type"]).toContain("javascript");
+  });
+
+  it("does not serve TPA.js when static files are disabled", async () => {
+    await request(createApp({ serveStatic: false })).get("/TPA.js").expect(404);
+  });
+
   it("does not serve test-planes.html when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/test-planes.html").expect(404);
   });
