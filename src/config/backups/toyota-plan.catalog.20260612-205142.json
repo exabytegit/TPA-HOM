@@ -35,7 +35,7 @@
     "modelDescription": "HIACE FURGON L2H2 2.8 TDI 6AT 3A 5P",
     "planId": "113",
     "planDescription": "PLAN 100% DIF G 84M",
-    "amount": 639161,
+    "amount": 639161.64,
     "seller": "HOM",
     "enabled": true
   },
@@ -55,7 +55,7 @@
     "modelDescription": "YARIS CROSS XEI HEV 1.5 ECVT FLEX",
     "planId": "114",
     "planDescription": "100% 84 M DIF H",
-    "amount": 651398,
+    "amount": 651441.37,
     "seller": "HOM",
     "enabled": true
   },

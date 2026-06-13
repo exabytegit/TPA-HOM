@@ -2,7 +2,7 @@
 
 ## Last Run
 
-- executed_at: 2026-06-12T18:41:21.298Z
+- executed_at: 2026-06-12T23:53:54.486Z
 - source: Google Sheet public CSV
 - catalog_file: src/config/toyota-plan.catalog.json
 - updated_count: 1
@@ -19,7 +19,7 @@ Se actualizaron 1 importes del catálogo local sin modificar slug, modelId, plan
 
 | model_id | plan_id | slug | old_amount | new_amount | difference |
 |---|---|---|---:|---:|---:|
-| 114 | 113 | hilux-4x4-dc-dx-24-tdi-at-plan-100 | 558824.14 | 558824.00 | -0.14 |
+| 111 | 113 | hiace-furgon-l2h2-28-tdi-at-plan-100 | 639161.64 | 639161.00 | -0.64 |
 
 ## Scope
 
