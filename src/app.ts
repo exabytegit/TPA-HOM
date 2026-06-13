@@ -25,9 +25,31 @@ export const createApp = (options?: {
   const enableMetrics = options?.enableMetrics ?? env.ENABLE_METRICS;
   const shouldServeStatic = options?.serveStatic ?? env.NODE_ENV !== "production";
   const shouldServeDevCatalog = options?.serveDevCatalog ?? env.NODE_ENV !== "production";
+  const helmetCspDirectives = {
+    defaultSrc: ["'self'"],
+    baseUri: ["'self'"],
+    formAction: ["'self'"],
+    frameAncestors: ["'self'"],
+    scriptSrc: ["'self'"],
+    scriptSrcAttr: ["'none'"],
+    styleSrc: ["'self'"],
+    imgSrc: ["'self'", "data:"],
+    objectSrc: ["'none'"],
+    ...(env.CSP_UPGRADE_INSECURE_REQUESTS ? { upgradeInsecureRequests: [] } : {})
+  };
 
   app.set("trust proxy", env.TRUST_PROXY);
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false
+    })
+  );
+  app.use(
+    helmet.contentSecurityPolicy({
+      useDefaults: false,
+      directives: helmetCspDirectives
+    })
+  );
   app.use(cors(corsConfig));
   app.use(correlationIdMiddleware);
   app.use(express.json({ limit: "32kb" }));

@@ -40,6 +40,11 @@ export const parseBooleanFlag = (rawValue: string | undefined, defaultValue = fa
   throw new Error("Boolean flag must be true, false, 1, or 0");
 };
 
+export const parseCspUpgradeInsecureRequests = (
+  rawValue: string | undefined,
+  nodeEnv: NodeEnv
+): boolean => parseBooleanFlag(rawValue, nodeEnv === "production");
+
 export const parseCorsAllowedOrigins = (rawValue: string | undefined, nodeEnv: NodeEnv): string[] => {
   const value =
     rawValue ?? (nodeEnv === "production" ? "" : "http://localhost:5173,http://localhost:3000");
@@ -79,27 +84,28 @@ export const parseCorsAllowedOrigins = (rawValue: string | undefined, nodeEnv: N
 
 const rawEnvSchema = z
   .object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().int().positive().default(3000),
-  CORS_ALLOWED_ORIGINS: z.string().optional(),
-  TRUST_PROXY: z.string().default("false"),
-  ENABLE_METRICS: z.string().default("false"),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
-  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(10),
-  TOYOTA_PLAN_OAUTH_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
-  TOYOTA_PLAN_GENERATE_LINK_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
-  ADMIN_USERNAME: z.string().min(1).default("homu"),
-  ADMIN_PASSWORD: z.string().min(1).default("change_me_local"),
-  TOYOTA_PLAN_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
-  TOYOTA_PLAN_CLIENT_ID: z.string().optional().default(""),
-  TOYOTA_PLAN_CLIENT_SECRET: z.string().optional().default(""),
-  TOYOTA_PLAN_SCOPE: z.string().min(1).default("ext-link/write"),
-  TOYOTA_PLAN_SELLER: z.literal("HOM").default("HOM"),
-  TOYOTA_PLAN_TOKEN_URL_SANDBOX: z.string().url(),
-  TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX: z.string().url(),
-  TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX: z.string().min(1),
-  TOYOTA_PLAN_TOKEN_URL_PRODUCTION: z.string().url(),
-  TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION: z.string().url(),
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    PORT: z.coerce.number().int().positive().default(3000),
+    CORS_ALLOWED_ORIGINS: z.string().optional(),
+    TRUST_PROXY: z.string().default("false"),
+    ENABLE_METRICS: z.string().default("false"),
+    CSP_UPGRADE_INSECURE_REQUESTS: z.string().optional(),
+    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
+    RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(10),
+    TOYOTA_PLAN_OAUTH_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+    TOYOTA_PLAN_GENERATE_LINK_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+    ADMIN_USERNAME: z.string().min(1).default("homu"),
+    ADMIN_PASSWORD: z.string().min(1).default("change_me_local"),
+    TOYOTA_PLAN_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
+    TOYOTA_PLAN_CLIENT_ID: z.string().optional().default(""),
+    TOYOTA_PLAN_CLIENT_SECRET: z.string().optional().default(""),
+    TOYOTA_PLAN_SCOPE: z.string().min(1).default("ext-link/write"),
+    TOYOTA_PLAN_SELLER: z.literal("HOM").default("HOM"),
+    TOYOTA_PLAN_TOKEN_URL_SANDBOX: z.string().url(),
+    TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX: z.string().url(),
+    TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX: z.string().min(1),
+    TOYOTA_PLAN_TOKEN_URL_PRODUCTION: z.string().url(),
+    TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION: z.string().url(),
     TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION: z.string().min(1)
   })
   .superRefine((values, context) => {
@@ -132,6 +138,17 @@ const rawEnvSchema = z
         message: error instanceof Error ? error.message : "Invalid ENABLE_METRICS"
       });
     }
+
+    try {
+      parseCspUpgradeInsecureRequests(values.CSP_UPGRADE_INSECURE_REQUESTS, values.NODE_ENV);
+    } catch (error) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["CSP_UPGRADE_INSECURE_REQUESTS"],
+        message:
+          error instanceof Error ? error.message : "Invalid CSP_UPGRADE_INSECURE_REQUESTS"
+      });
+    }
   });
 
 const rawEnv = rawEnvSchema.parse({
@@ -140,6 +157,7 @@ const rawEnv = rawEnvSchema.parse({
   CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS,
   TRUST_PROXY: process.env.TRUST_PROXY,
   ENABLE_METRICS: process.env.ENABLE_METRICS,
+  CSP_UPGRADE_INSECURE_REQUESTS: process.env.CSP_UPGRADE_INSECURE_REQUESTS,
   RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS,
   TOYOTA_PLAN_OAUTH_TIMEOUT_MS: process.env.TOYOTA_PLAN_OAUTH_TIMEOUT_MS,
@@ -175,7 +193,11 @@ export const env = {
   ...rawEnv,
   CORS_ALLOWED_ORIGINS: parseCorsAllowedOrigins(rawEnv.CORS_ALLOWED_ORIGINS, rawEnv.NODE_ENV),
   TRUST_PROXY: parseTrustProxy(rawEnv.TRUST_PROXY),
-  ENABLE_METRICS: parseBooleanFlag(rawEnv.ENABLE_METRICS)
+  ENABLE_METRICS: parseBooleanFlag(rawEnv.ENABLE_METRICS),
+  CSP_UPGRADE_INSECURE_REQUESTS: parseCspUpgradeInsecureRequests(
+    rawEnv.CSP_UPGRADE_INSECURE_REQUESTS,
+    rawEnv.NODE_ENV
+  )
 };
 
 export const assertToyotaCredentials = (): void => {

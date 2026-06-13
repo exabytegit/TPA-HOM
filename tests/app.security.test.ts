@@ -13,9 +13,11 @@ import { AppError } from "../src/utils/appError";
 
 describe("app security middleware", () => {
   const originalNodeEnv = env.NODE_ENV;
+  const originalCspUpgrade = env.CSP_UPGRADE_INSECURE_REQUESTS;
 
   afterEach(() => {
     env.NODE_ENV = originalNodeEnv;
+    env.CSP_UPGRADE_INSECURE_REQUESTS = originalCspUpgrade;
     vi.unstubAllGlobals();
   });
 
@@ -234,6 +236,12 @@ describe("app security middleware", () => {
     expect(response.text).not.toContain("onclick=");
     expect(response.text).not.toContain("onload=");
     expect(response.text).not.toContain("onchange=");
+    expect(response.headers["content-security-policy"]).toContain("default-src 'self'");
+    expect(response.headers["content-security-policy"]).toContain("script-src 'self'");
+    expect(response.headers["content-security-policy"]).toContain("script-src-attr 'none'");
+    expect(response.headers["content-security-policy"]).toContain("img-src 'self' data:");
+    expect(response.headers["content-security-policy"]).toContain("object-src 'none'");
+    expect(response.headers["content-security-policy"]).not.toContain("upgrade-insecure-requests");
   });
 
   it("does not serve TPA.html when static files are disabled", async () => {
@@ -272,6 +280,12 @@ describe("app security middleware", () => {
     expect(response.text).not.toContain("onclick=");
     expect(response.text).not.toContain("onload=");
     expect(response.text).not.toContain("onchange=");
+    expect(response.headers["content-security-policy"]).toContain("default-src 'self'");
+    expect(response.headers["content-security-policy"]).toContain("script-src 'self'");
+    expect(response.headers["content-security-policy"]).toContain("script-src-attr 'none'");
+    expect(response.headers["content-security-policy"]).toContain("img-src 'self' data:");
+    expect(response.headers["content-security-policy"]).toContain("object-src 'none'");
+    expect(response.headers["content-security-policy"]).not.toContain("upgrade-insecure-requests");
   });
 
   it("does not serve admin.html when static files are disabled", async () => {
@@ -391,6 +405,15 @@ describe("app security middleware", () => {
         expect(content).not.toMatch(pattern);
       }
     }
+  });
+
+  it("includes upgrade-insecure-requests in production when enabled", async () => {
+    env.NODE_ENV = "production";
+    env.CSP_UPGRADE_INSECURE_REQUESTS = true;
+
+    const response = await request(createApp({ serveStatic: true })).get("/TPA.html").expect(200);
+
+    expect(response.headers["content-security-policy"]).toContain("upgrade-insecure-requests");
   });
 
   it("does not serve test-planes.html when static files are disabled", async () => {

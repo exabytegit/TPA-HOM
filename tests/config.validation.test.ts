@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseBooleanFlag,
+  parseCspUpgradeInsecureRequests,
   parseCorsAllowedOrigins,
   parseTrustProxy
 } from "../src/config/env";
@@ -36,8 +38,19 @@ describe("environment config validation", () => {
     expect(parseTrustProxy("1")).toBe(1);
   });
 
+  it("parses CSP upgrade insecure requests safely", () => {
+    expect(parseCspUpgradeInsecureRequests(undefined, "development")).toBe(false);
+    expect(parseCspUpgradeInsecureRequests(undefined, "production")).toBe(true);
+    expect(parseCspUpgradeInsecureRequests("false", "production")).toBe(false);
+    expect(parseCspUpgradeInsecureRequests("true", "development")).toBe(true);
+  });
+
   it("rejects invalid trust proxy values", () => {
     expect(() => parseTrustProxy("not-valid")).toThrow();
+  });
+
+  it("rejects invalid boolean flags", () => {
+    expect(() => parseBooleanFlag("not-valid")).toThrow();
   });
 
   it("resolves Toyota Plan expected link host by environment", () => {
