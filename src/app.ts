@@ -34,6 +34,16 @@ export const createApp = (options?: {
   app.use(requestLogger);
 
   if (shouldServeStatic) {
+    app.use((req, res, next) => {
+      const lowerPath = req.path.toLowerCase();
+      if (["/", "/tpa", "/tpa.html"].includes(lowerPath) && req.path !== "/TPA.html") {
+        res.redirect(302, "/TPA.html");
+        return;
+      }
+
+      next();
+    });
+
     app.use(express.static("public"));
   }
 

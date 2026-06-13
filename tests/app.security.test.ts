@@ -238,6 +238,16 @@ describe("app security middleware", () => {
     await request(createApp({ serveStatic: false })).get("/TPA.html").expect(404);
   });
 
+  it("redirects root and lowercase aliases to TPA.html in development", async () => {
+    await request(createApp({ serveStatic: true })).get("/").redirects(0).expect(302).expect("Location", "/TPA.html");
+    await request(createApp({ serveStatic: true })).get("/tpa").redirects(0).expect(302).expect("Location", "/TPA.html");
+    await request(createApp({ serveStatic: true }))
+      .get("/tpa.html")
+      .redirects(0)
+      .expect(302)
+      .expect("Location", "/TPA.html");
+  });
+
   it("serves admin.html when static files are enabled", async () => {
     const response = await request(createApp({ serveStatic: true })).get("/admin.html").expect(200);
 
