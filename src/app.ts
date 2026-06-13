@@ -41,6 +41,11 @@ export const createApp = (options?: {
         return;
       }
 
+      if (lowerPath === "/admin" && req.path !== "/admin.html") {
+        res.redirect(302, "/admin.html");
+        return;
+      }
+
       next();
     });
 

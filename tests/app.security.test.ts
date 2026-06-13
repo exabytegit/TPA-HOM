@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
@@ -276,6 +278,14 @@ describe("app security middleware", () => {
     await request(createApp({ serveStatic: false })).get("/admin.html").expect(404);
   });
 
+  it("redirects /admin to admin.html in development", async () => {
+    await request(createApp({ serveStatic: true }))
+      .get("/admin")
+      .redirects(0)
+      .expect(302)
+      .expect("Location", "/admin.html");
+  });
+
   it("serves TPA.css when static files are enabled", async () => {
     const response = await request(createApp({ serveStatic: true })).get("/TPA.css").expect(200);
 
@@ -361,6 +371,26 @@ describe("app security middleware", () => {
 
   it("does not serve admin.js when static files are disabled", async () => {
     await request(createApp({ serveStatic: false })).get("/admin.js").expect(404);
+  });
+
+  it("keeps public html js and css assets free of absolute local URLs", async () => {
+    const publicDir = join(process.cwd(), "public");
+    const files = (await readdir(publicDir)).filter((file) => /\.(html|js|css)$/i.test(file));
+    const forbiddenPatterns = [
+      /https:\/\/192\.168\.25\.95/gi,
+      /http:\/\/192\.168\.25\.95/gi,
+      /https:\/\/localhost/gi,
+      /http:\/\/localhost/gi,
+      /https:\/\/127\.0\.0\.1/gi,
+      /http:\/\/127\.0\.0\.1/gi
+    ];
+
+    for (const file of files) {
+      const content = await readFile(join(publicDir, file), "utf8");
+      for (const pattern of forbiddenPatterns) {
+        expect(content).not.toMatch(pattern);
+      }
+    }
   });
 
   it("does not serve test-planes.html when static files are disabled", async () => {
