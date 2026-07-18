@@ -55,6 +55,14 @@ CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
 - Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorizacion formal.
 - Cambiar a `production` solo despues de validacion operativa y checklist firmado.
 
+## Preparacion para Produccion
+
+- El backend quedo listo para recibir credenciales productivas por `.env`.
+- No cargar credenciales en el repositorio.
+- Validar OAuth Produccion antes de promover trafico real.
+- Validar `generateLink` Produccion antes de habilitar usuarios finales.
+- Confirmar que el host esperado de Produccion coincida con el valor configurado en el ambiente.
+
 ## Dev-only testing tools
 
 Herramientas internas disponibles solo fuera de produccion:

@@ -263,6 +263,8 @@ describe("app security middleware", () => {
 
     expect(response.text).toContain("Administracion TPA-HOM");
     expect(response.text).toContain("Validacion de catalogo, pruebas sandbox y diagnostico tecnico");
+    expect(response.text).toContain("Entorno actual");
+    expect(response.text).toContain("TOYOTA_PLAN_ENV");
     expect(response.text).toContain("Catálogo Toyota Plan");
     expect(response.text).toContain("Estado del catálogo");
     expect(response.text).toContain("Herramientas disponibles");
@@ -363,11 +365,13 @@ describe("app security middleware", () => {
     const response = await request(createApp({ serveStatic: true })).get("/admin.js").expect(200);
 
     expect(response.text).toContain('sessionStorage.getItem(AUTH_STORAGE_KEY)');
+    expect(response.text).toContain("ENVIRONMENT_STORAGE_KEY");
     expect(response.text).toContain('fetch("/api/dev/admin/login"');
     expect(response.text).toContain('fetch("/api/dev/catalog"');
     expect(response.text).toContain('fetch("/api/toyota-plan/generate-link"');
     expect(response.text).toContain('fetch("/api/dev/admin/catalog/update-amounts-from-sheet"');
     expect(response.text).toContain('"x-admin-session": token');
+    expect(response.text).toContain("toyotaPlanEnvironment");
     expect(response.text).toContain("Credenciales invalidas");
     expect(response.text).toContain("tpa_admin_authenticated");
     expect(response.text).toContain("tpa_admin_session_token");
@@ -508,7 +512,8 @@ describe("app security middleware", () => {
 
     expect(response.body).toMatchObject({
       success: true,
-      adminSessionToken: expect.any(String)
+      adminSessionToken: expect.any(String),
+      toyotaPlanEnvironment: "sandbox"
     });
   });
 

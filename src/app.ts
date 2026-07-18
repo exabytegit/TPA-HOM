@@ -130,7 +130,8 @@ export const createApp = (options?: {
 
       res.json({
         success: true,
-        adminSessionToken
+        adminSessionToken,
+        toyotaPlanEnvironment: env.TOYOTA_PLAN_ENV
       });
     });
 

@@ -1,5 +1,26 @@
 # Sandbox Test Log
 
+## v0.5.10 - Preparacion para Produccion
+
+### Fecha
+
+2026-07-17
+
+### Resultado
+
+Se preparo el proyecto para el pase a Produccion Toyota Plan sin modificar credenciales, catalogo ni la compatibilidad con Sandbox.
+
+### Confirmaciones
+
+- la seleccion de ambiente sigue dependiendo de `TOYOTA_PLAN_ENV`;
+- los endpoints de Produccion continÃºan configurados desde variables de entorno;
+- no se realizaron requests a Toyota Plan Produccion;
+- el admin muestra el entorno actual como dato de solo lectura;
+- no se exponen tokens, `Authorization`, `client_secret`, `client_id` ni links completos;
+- Sandbox sigue funcionando sin cambios funcionales.
+
+---
+
 ## v0.5.9 - Actualizacion admin de importes desde Sheet
 
 ### Fecha

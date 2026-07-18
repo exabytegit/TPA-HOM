@@ -51,7 +51,8 @@ Response 200:
 ```json
 {
   "success": true,
-  "adminSessionToken": "admin-session-token"
+  "adminSessionToken": "admin-session-token",
+  "toyotaPlanEnvironment": "sandbox"
 }
 ```
 
@@ -59,6 +60,13 @@ Headers relevantes:
 
 - `content-type: application/json`
 - `x-correlation-id` opcional
+
+## Preparacion para Produccion
+
+- El proyecto quedo preparado para operar con `TOYOTA_PLAN_ENV=production` cuando se carguen las credenciales productivas.
+- Falta validar OAuth Produccion.
+- Falta validar `generateLink` Produccion.
+- No se modifico el catalogo ni la logica de negocio para Sandbox.
 
 ### POST /api/dev/admin/catalog/update-amounts-from-sheet
 

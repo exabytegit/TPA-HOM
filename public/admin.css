@@ -125,6 +125,31 @@ body {
   box-shadow: 0 8px 24px rgba(24, 33, 47, 0.05);
 }
 
+.environment-card {
+  min-width: 220px;
+  padding: 16px 18px;
+  border: 1px solid rgba(215, 25, 32, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
+}
+
+.environment-value {
+  display: block;
+  margin: 0;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.environment-copy {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .control-panel,
 .data-section,
 .future-section {

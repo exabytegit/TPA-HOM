@@ -1,5 +1,6 @@
 const AUTH_STORAGE_KEY = "tpa_admin_authenticated";
 const SESSION_TOKEN_STORAGE_KEY = "tpa_admin_session_token";
+const ENVIRONMENT_STORAGE_KEY = "tpa_admin_toyota_plan_environment";
 const delayMs = 500;
 
 const loginScreen = document.getElementById("login-screen");
@@ -25,10 +26,12 @@ const updateUnchanged = document.getElementById("update-unchanged");
 const updateSheetOnly = document.getElementById("update-sheet-only");
 const updateCatalogOnly = document.getElementById("update-catalog-only");
 const updateChangesBody = document.getElementById("update-changes-body");
+const environmentValue = document.getElementById("environment-value");
 
 const state = new Map();
 const rowElements = new Map();
 let catalog = [];
+let toyotaPlanEnvironment = "sandbox";
 
 const formatAmount = (value) =>
   new Intl.NumberFormat("es-AR", {
@@ -83,6 +86,15 @@ function setUpdateFeedback(message, isError = false) {
   if (!(updateFeedback instanceof HTMLElement)) return;
   updateFeedback.textContent = message;
   updateFeedback.className = isError ? "banner update-banner error" : "banner update-banner";
+}
+
+function normalizeEnvironment(value) {
+  return value === "production" ? "production" : "sandbox";
+}
+
+function renderEnvironment() {
+  if (!(environmentValue instanceof HTMLElement)) return;
+  environmentValue.textContent = toyotaPlanEnvironment === "production" ? "Produccion" : "Sandbox";
 }
 
 function setUpdateSummary(result) {
@@ -151,6 +163,12 @@ function setAdminActionsDisabled(disabled) {
   if (updatePricesButtonSecondary instanceof HTMLButtonElement) {
     updatePricesButtonSecondary.disabled = disabled;
   }
+}
+
+function persistEnvironment(value) {
+  toyotaPlanEnvironment = normalizeEnvironment(value);
+  sessionStorage.setItem(ENVIRONMENT_STORAGE_KEY, toyotaPlanEnvironment);
+  renderEnvironment();
 }
 
 function updateSummary() {
@@ -529,6 +547,8 @@ async function loadCatalog() {
 function clearSessionAndReset() {
   sessionStorage.removeItem(AUTH_STORAGE_KEY);
   sessionStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(ENVIRONMENT_STORAGE_KEY);
+  toyotaPlanEnvironment = "sandbox";
   catalog = [];
   state.clear();
   rowElements.clear();
@@ -577,6 +597,7 @@ async function handleLogin(event) {
     } else {
       sessionStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
     }
+    persistEnvironment(body.toyotaPlanEnvironment);
     if (passwordInput instanceof HTMLInputElement) {
       passwordInput.value = "";
     }
@@ -588,12 +609,21 @@ async function handleLogin(event) {
 }
 
 function boot() {
+  const persistedEnvironment = sessionStorage.getItem(ENVIRONMENT_STORAGE_KEY);
+  if (persistedEnvironment) {
+    toyotaPlanEnvironment = normalizeEnvironment(persistedEnvironment);
+  }
+  renderEnvironment();
+
   if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "true" && getAdminSessionToken()) {
     showAdmin();
     loadCatalog();
   } else {
     sessionStorage.removeItem(AUTH_STORAGE_KEY);
     sessionStorage.removeItem(SESSION_TOKEN_STORAGE_KEY);
+    sessionStorage.removeItem(ENVIRONMENT_STORAGE_KEY);
+    toyotaPlanEnvironment = "sandbox";
+    renderEnvironment();
     showLogin();
   }
 

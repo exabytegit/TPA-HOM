@@ -239,6 +239,17 @@ solo cuando el backend este detras de un unico proxy reverso confiable que limpi
 `X-Forwarded-For`.
 `ENABLE_METRICS=false` es el default. Si se activa, expone `/metrics` con counters basicos en memoria.
 
+## Preparacion para Produccion
+
+El proyecto quedo preparado para el pase a Produccion Toyota Plan. Lo que sigue pendiente es:
+
+- cargar manualmente las credenciales productivas en `.env`;
+- validar OAuth en Produccion;
+- validar `generateLink` en Produccion;
+- confirmar el host esperado de Produccion en el ambiente real.
+
+No se modifico el catalogo, no se tocaron credenciales y Sandbox sigue siendo compatible.
+
 ## Comandos
 
 ```bash

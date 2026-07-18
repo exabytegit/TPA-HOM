@@ -169,24 +169,12 @@ const rawEnv = rawEnvSchema.parse({
   TOYOTA_PLAN_CLIENT_SECRET: process.env.TOYOTA_PLAN_CLIENT_SECRET,
   TOYOTA_PLAN_SCOPE: process.env.TOYOTA_PLAN_SCOPE,
   TOYOTA_PLAN_SELLER: process.env.TOYOTA_PLAN_SELLER,
-  TOYOTA_PLAN_TOKEN_URL_SANDBOX:
-    process.env.TOYOTA_PLAN_TOKEN_URL_SANDBOX ??
-    "https://auth.sdx.suscripcion.toyotaplan.com.ar/oauth2/token",
-  TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX:
-    process.env.TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX ??
-    "https://sdx.suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink",
-  TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX:
-    process.env.TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX ??
-    "sdx.suscripcion.toyotaplan.com.ar",
-  TOYOTA_PLAN_TOKEN_URL_PRODUCTION:
-    process.env.TOYOTA_PLAN_TOKEN_URL_PRODUCTION ??
-    "https://auth.suscripcion.toyotaplan.com.ar/oauth2/token",
-  TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION:
-    process.env.TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION ??
-    "https://suscripcion.toyotaplan.com.ar/api/public/subscriptions/generatelink",
-  TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION:
-    process.env.TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION ??
-    "suscripcion.toyotaplan.com.ar"
+  TOYOTA_PLAN_TOKEN_URL_SANDBOX: process.env.TOYOTA_PLAN_TOKEN_URL_SANDBOX,
+  TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX: process.env.TOYOTA_PLAN_GENERATE_LINK_URL_SANDBOX,
+  TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX: process.env.TOYOTA_PLAN_EXPECTED_LINK_HOST_SANDBOX,
+  TOYOTA_PLAN_TOKEN_URL_PRODUCTION: process.env.TOYOTA_PLAN_TOKEN_URL_PRODUCTION,
+  TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION: process.env.TOYOTA_PLAN_GENERATE_LINK_URL_PRODUCTION,
+  TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION: process.env.TOYOTA_PLAN_EXPECTED_LINK_HOST_PRODUCTION
 });
 
 export const env = {
