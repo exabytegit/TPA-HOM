@@ -239,24 +239,40 @@ solo cuando el backend este detras de un unico proxy reverso confiable que limpi
 `X-Forwarded-For`.
 `ENABLE_METRICS=false` es el default. Si se activa, expone `/metrics` con counters basicos en memoria.
 
-## Preparacion para Produccion
+## Migración a Producción
 
-El proyecto quedo preparado para el pase a Produccion Toyota Plan. Lo que sigue pendiente es:
+El proyecto quedo listo para la validacion contra Produccion Toyota Plan sin tocar `.env` ni
+modificar el Adapter.
 
-- cargar manualmente las credenciales productivas en `.env`;
-- validar OAuth en Produccion;
-- validar `generateLink` en Produccion;
-- confirmar el host esperado de Produccion en el ambiente real.
+Pasos operativos:
 
-No se modifico el catalogo, no se tocaron credenciales y Sandbox sigue siendo compatible.
+1. Cargar manualmente las credenciales productivas en `.env`.
+2. Cambiar `TOYOTA_PLAN_ENV=production`.
+3. Validar OAuth contra Produccion.
+4. Validar `generateLink` contra Produccion.
+5. Validar el Front contra el backend.
+6. Ejecutar `npm run smoke:production`.
+7. Confirmar funcionamiento y registrar el resultado.
+
+Rollback rapido a Sandbox:
+
+1. Volver a `TOYOTA_PLAN_ENV=sandbox`.
+2. Mantener las credenciales sandbox o restaurar las anteriores si el operador las habia reemplazado.
+3. Ejecutar `npm run smoke:sandbox`.
+4. Confirmar que el Front sigue resolviendo los enlaces desde Sandbox.
+
+No se modifico el catalogo y Sandbox sigue siendo compatible.
 
 ## Comandos
 
 ```bash
 npm run dev        # servidor en desarrollo
 npm run smoke:sandbox # validacion controlada del catalogo contra sandbox
+npm run smoke:production # validacion controlada del catalogo contra produccion
 npm run smoke:sheet # validacion sandbox usando filas del Google Sheet publico
 npm run catalog:compare-sheet # compara catalogo local contra Google Sheet publico
+npm run env:sandbox # imprime los pasos para preparar el entorno sandbox
+npm run env:production # imprime los pasos para preparar el entorno production
 npm run build      # compila TypeScript a dist/
 npm start          # ejecuta dist/server.js
 npm run lint       # ESLint

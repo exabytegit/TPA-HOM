@@ -265,6 +265,8 @@ describe("app security middleware", () => {
     expect(response.text).toContain("Validacion de catalogo, pruebas sandbox y diagnostico tecnico");
     expect(response.text).toContain("Entorno actual");
     expect(response.text).toContain("TOYOTA_PLAN_ENV");
+    expect(response.text).toContain("Preparacion para Produccion");
+    expect(response.text).toContain("Credenciales cargadas");
     expect(response.text).toContain("Catálogo Toyota Plan");
     expect(response.text).toContain("Estado del catálogo");
     expect(response.text).toContain("Herramientas disponibles");
@@ -354,6 +356,7 @@ describe("app security middleware", () => {
     expect(response.text).toContain(".catalog-dashboard");
     expect(response.text).toContain(".dashboard-card");
     expect(response.text).toContain(".technical-accordion");
+    expect(response.text).toContain(".production-prep");
     expect(response.text).toContain(".status-pill");
     expect(response.text).toContain(".update-panel");
     expect(response.text).toContain(".update-summary-grid");

@@ -55,10 +55,28 @@ CORS_ALLOWED_ORIGINS=https://www.homu.com.ar,https://homu.com.ar
 - Mantener `TOYOTA_PLAN_ENV=sandbox` hasta autorizacion formal.
 - Cambiar a `production` solo despues de validacion operativa y checklist firmado.
 
+## Migración a Producción
+
+1. Cargar manualmente las credenciales productivas en `.env`.
+2. Cambiar `TOYOTA_PLAN_ENV=production`.
+3. Validar OAuth contra Produccion.
+4. Validar `generateLink` contra Produccion.
+5. Validar el Front contra el backend.
+6. Ejecutar `npm run smoke:production`.
+7. Confirmar funcionamiento y registrar el resultado.
+
+Rollback rapido a Sandbox:
+
+1. Volver a `TOYOTA_PLAN_ENV=sandbox`.
+2. Mantener las credenciales sandbox o restaurar las anteriores si fueron reemplazadas.
+3. Ejecutar `npm run smoke:sandbox`.
+4. Confirmar que el Front vuelve a resolver solo el flujo Sandbox.
+
 ## Preparacion para Produccion
 
 - El backend quedo listo para recibir credenciales productivas por `.env`.
 - No cargar credenciales en el repositorio.
+- `npm run env:sandbox` y `npm run env:production` solo imprimen instrucciones operativas, porque un script npm no puede persistir cambios de entorno al shell padre sin tocar `.env`.
 - Validar OAuth Produccion antes de promover trafico real.
 - Validar `generateLink` Produccion antes de habilitar usuarios finales.
 - Confirmar que el host esperado de Produccion coincida con el valor configurado en el ambiente.

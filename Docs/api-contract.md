@@ -61,11 +61,26 @@ Headers relevantes:
 - `content-type: application/json`
 - `x-correlation-id` opcional
 
+## Migración a Producción
+
+1. Cargar manualmente las credenciales productivas en `.env`.
+2. Cambiar `TOYOTA_PLAN_ENV=production`.
+3. Validar OAuth contra Produccion.
+4. Validar `generateLink` contra Produccion.
+5. Validar el Front contra el backend.
+6. Ejecutar `npm run smoke:production`.
+7. Confirmar funcionamiento y dejar trazabilidad.
+
+Rollback rapido a Sandbox:
+
+1. Volver a `TOYOTA_PLAN_ENV=sandbox`.
+2. Ejecutar `npm run smoke:sandbox`.
+3. Confirmar que el flujo Sandbox sigue operativo.
+
 ## Preparacion para Produccion
 
 - El proyecto quedo preparado para operar con `TOYOTA_PLAN_ENV=production` cuando se carguen las credenciales productivas.
-- Falta validar OAuth Produccion.
-- Falta validar `generateLink` Produccion.
+- `npm run env:sandbox` y `npm run env:production` solo imprimen los comandos de shell recomendados.
 - No se modifico el catalogo ni la logica de negocio para Sandbox.
 
 ### POST /api/dev/admin/catalog/update-amounts-from-sheet

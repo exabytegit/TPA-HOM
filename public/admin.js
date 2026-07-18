@@ -94,7 +94,14 @@ function normalizeEnvironment(value) {
 
 function renderEnvironment() {
   if (!(environmentValue instanceof HTMLElement)) return;
-  environmentValue.textContent = toyotaPlanEnvironment === "production" ? "Produccion" : "Sandbox";
+  if (toyotaPlanEnvironment === "production") {
+    environmentValue.textContent = "🔴 Producción";
+    environmentValue.setAttribute("data-environment", "production");
+    return;
+  }
+
+  environmentValue.textContent = "🟢 Sandbox";
+  environmentValue.setAttribute("data-environment", "sandbox");
 }
 
 function setUpdateSummary(result) {

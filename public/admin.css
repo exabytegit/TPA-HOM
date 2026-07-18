@@ -133,14 +133,31 @@ body {
   background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
 }
 
+.environment-rule {
+  color: #c8cfdb;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.environment-kicker {
+  margin: 8px 0 10px;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .environment-value {
   display: block;
   margin: 0;
   color: var(--ink);
-  font-size: 22px;
+  font-size: 21px;
   line-height: 1.15;
   font-weight: 900;
-  text-transform: capitalize;
 }
 
 .environment-copy {
@@ -148,6 +165,41 @@ body {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.production-prep {
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 8px 24px rgba(24, 33, 47, 0.05);
+}
+
+.prep-checklist {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prep-checklist li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.prep-box {
+  min-width: 20px;
+  color: var(--brand);
+  font-size: 16px;
+  font-weight: 900;
 }
 
 .control-panel,
@@ -522,6 +574,7 @@ code {
   .admin-header,
   .control-panel,
   .data-section,
+  .production-prep,
   .future-section {
     padding: 18px 16px;
   }

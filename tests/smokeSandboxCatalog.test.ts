@@ -57,7 +57,12 @@ describe("smokeSandboxCatalog helpers", () => {
       }
     ];
     const summary = buildSmokeCatalogSummary(results);
-    const markdown = renderSmokeCatalogMarkdown("2026-05-21T00:00:00.000Z", results, summary);
+    const markdown = renderSmokeCatalogMarkdown(
+      "Sandbox Catalog Validation Log",
+      "2026-05-21T00:00:00.000Z",
+      results,
+      summary
+    );
 
     expect(markdown).toContain("sdx.suscripcion.toyotaplan.com.ar");
     expect(markdown).not.toContain("?external=");

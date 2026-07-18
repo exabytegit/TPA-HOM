@@ -49,8 +49,10 @@
             </p>
           </div>
           <div class="environment-card" aria-label="Entorno actual">
-            <p class="section-kicker">Entorno actual</p>
-            <strong id="environment-value" class="environment-value">Sandbox</strong>
+            <div class="environment-rule" aria-hidden="true">━━━━━━━━━━━━━━━━━━━━━━</div>
+            <p class="environment-kicker">ENTORNO ACTUAL</p>
+            <strong id="environment-value" class="environment-value">🟢 Sandbox</strong>
+            <div class="environment-rule" aria-hidden="true">━━━━━━━━━━━━━━━━━━━━━━</div>
             <p class="environment-copy">Solo lectura. Se resuelve desde TOYOTA_PLAN_ENV.</p>
           </div>
           <button id="logout-button" class="btn btn-secondary" type="button">Cerrar sesion</button>
@@ -117,6 +119,21 @@
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section class="production-prep" aria-labelledby="production-prep-title">
+          <div class="section-heading">
+            <p class="section-kicker">Preparacion para Produccion</p>
+            <h2 id="production-prep-title">Preparacion para Produccion</h2>
+          </div>
+          <ul class="prep-checklist" aria-label="Checklist visual de produccion">
+            <li><span class="prep-box" aria-hidden="true">☐</span><span>Credenciales cargadas</span></li>
+            <li><span class="prep-box" aria-hidden="true">☐</span><span>OAuth validado</span></li>
+            <li><span class="prep-box" aria-hidden="true">☐</span><span>GenerateLink validado</span></li>
+            <li><span class="prep-box" aria-hidden="true">☐</span><span>Host validado</span></li>
+            <li><span class="prep-box" aria-hidden="true">☐</span><span>Front validado</span></li>
+            <li><span class="prep-box" aria-hidden="true">☐</span><span>Smoke completo ejecutado</span></li>
+          </ul>
         </section>
 
         <section class="summary" aria-label="Resumen de resultados">

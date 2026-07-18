@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "smoke:sandbox": "tsx scripts/smokeSandboxCatalog.ts",
+    "smoke:production": "tsx scripts/smokeProductionCatalog.ts",
     "smoke:sheet": "tsx scripts/smokeSheetCatalog.ts",
     "catalog:compare-sheet": "tsx scripts/compareCatalogWithSheet.ts",
+    "env:sandbox": "tsx scripts/prepareToyotaPlanEnv.ts sandbox",
+    "env:production": "tsx scripts/prepareToyotaPlanEnv.ts production",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
